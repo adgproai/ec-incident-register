@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Feedback &amp; Incident Reports · Experiences Caribbean</title>
+<meta name="description" content="Tell Experiences Caribbean about a complaint, compliment, accident, near miss or concern on one of our tours.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#f3f6f5; --surface:#ffffff; --sunk:#e8eeec; --ink:#10221f; --muted:#5b6e6a; --line:#cfdbd8;
+  --accent:#0b6e66; --accent-ink:#ffffff; --accent-soft:#d5ece9;
+  --crit:#b42318; --crit-soft:#fbe4e1; --high:#b54708; --high-soft:#fcebd8; --med:#8a6d00; --med-soft:#f6efcc; --low:#2f6f3e; --low-soft:#dcefe0;
+  --restricted:#5b3fa3; --restricted-soft:#e9e3f7;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1716; --surface:#14211f; --sunk:#1b2b29; --ink:#e3eeeb; --muted:#93a8a3; --line:#2a3d3a;
+  --accent:#4fc2b6; --accent-ink:#06201d; --accent-soft:#183d39;
+  --crit:#ff8a7f; --crit-soft:#3d1d1a; --high:#f5a65b; --high-soft:#3a2714; --med:#e3c454; --med-soft:#332c10; --low:#7fd093; --low-soft:#16301c;
+  --restricted:#b9a3f0; --restricted-soft:#2a2240; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1716; --surface:#14211f; --sunk:#1b2b29; --ink:#e3eeeb; --muted:#93a8a3; --line:#2a3d3a;
+  --accent:#4fc2b6; --accent-ink:#06201d; --accent-soft:#183d39;
+  --crit:#ff8a7f; --crit-soft:#3d1d1a; --high:#f5a65b; --high-soft:#3a2714; --med:#e3c454; --med-soft:#332c10; --low:#7fd093; --low-soft:#16301c;
+  --restricted:#b9a3f0; --restricted-soft:#2a2240; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+.check.field{flex-direction:row;align-items:flex-start;gap:8px}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;padding-block:12px}
+.brand{display:flex;flex-direction:column;min-width:0;color:inherit;text-decoration:none}
+.brand b{font:700 19px/1.15 var(--f-display);letter-spacing:-.01em}
+.brand span{font-size:12.5px;color:var(--muted)}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto;align-items:center}
+nav.tabs button{font:600 14px var(--f-body);border:1px solid transparent;background:none;color:var(--muted);padding:7px 12px;border-radius:999px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--ink);border-color:var(--accent)}
+nav.tabs button:hover{color:var(--ink)}
+nav.tabs .sep{width:1px;height:22px;background:var(--line);margin-inline:4px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mode{font-size:12.5px;color:var(--muted);padding-block:6px;border-top:1px dashed var(--line)}
+.mode strong{color:var(--ink)}
+main{padding-block:24px 48px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:28px;font-weight:700} h2{font-size:20px;font-weight:700} h3{font-size:16px;font-weight:700}
+.lede{color:var(--muted);max-width:62ch;margin:6px 0 0}
+.sos{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-block:16px}
+@media (max-width:720px){.sos{grid-template-columns:minmax(0,1fr)}}
+.sos > div{border-radius:10px;padding:12px 16px;display:flex;flex-direction:column;gap:2px}
+.sos .help{background:var(--accent-soft);border:1px solid var(--accent)}
+.sos .em{background:var(--crit-soft);border:1px solid var(--crit)}
+.sos b{font-family:var(--f-display);font-size:15.5px}
+.sos .em b{color:var(--crit)}
+.sos a.num{font:600 18px var(--f-mono);color:var(--ink);text-decoration:none}
+.sos a.num:hover{text-decoration:underline}
+.sos .hint{color:var(--muted)}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px 20px}
+@media (max-width:720px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field.full{grid-column:1/-1}
+label,.lbl{font-weight:700;font-size:13.5px}
+.hint{font-size:12.5px;color:var(--muted);font-weight:400}
+input[type=text],input[type=email],input[type=tel],input[type=date],input[type=datetime-local],select,textarea{font:15px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
+input:disabled{background:var(--sunk);color:var(--muted)}
+textarea{min-height:96px;resize:vertical}
+fieldset{border:1px solid var(--line);border-radius:12px;padding:16px;margin:0;min-width:0}
+legend{font:700 13px var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0 6px}
+.who{display:flex;gap:8px;flex-wrap:wrap;margin-block:6px}
+.who button{font:600 14px var(--f-body);padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.who button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.cat{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;background:var(--surface)}
+.cat input{margin-top:4px}
+.cat:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.cat b{display:block;font-size:14px}
+.cat span{display:block;font-size:12.5px;color:var(--muted)}
+.check{display:flex;gap:8px;align-items:flex-start;font-weight:400;font-size:14px}
+.check input{margin-top:4px}
+.btn{font:700 14.5px var(--f-body);background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:11px 18px;cursor:pointer}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.btn.small{padding:6px 11px;font-size:13px;border-radius:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.notice{border-left:3px solid var(--restricted);background:var(--restricted-soft);padding:10px 14px;border-radius:0 8px 8px 0;font-size:14px}
+.warnbox{border-left:3px solid var(--crit);background:var(--crit-soft);padding:10px 14px;border-radius:0 8px 8px 0;font-size:14px}
+.done{border:1px solid var(--accent);background:var(--accent-soft);border-radius:12px;padding:18px}
+.ref{font:600 14px var(--f-mono);letter-spacing:.02em}
+.stack{display:flex;flex-direction:column;gap:16px}
+.narrow{max-width:460px}
+.reg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:20px;align-items:start}
+@media (max-width:900px){.reg{grid-template-columns:minmax(0,1fr)}}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-block:14px}
+.filters select,.filters input{width:auto;min-width:0;flex:1 1 140px;padding:7px 9px;font-size:14px}
+.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.item{display:grid;grid-template-columns:6px minmax(0,1fr) auto;gap:0 12px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;padding:0;cursor:pointer;color:var(--ink);font:inherit}
+.item:last-child{border-bottom:0}
+.item[aria-current="true"]{background:var(--sunk)}
+.item .stripe{background:var(--line)}
+.item .main{padding:11px 0;min-width:0}
+.item .main .t{display:block;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .main .m{display:block;font-size:12.5px;color:var(--muted)}
+.item .side{padding:11px 14px 11px 0;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.sev-Critical .stripe{background:var(--crit)} .sev-High .stripe{background:var(--high)} .sev-Medium .stripe{background:var(--med)} .sev-Low .stripe{background:var(--low)}
+.pill{display:inline-flex;align-items:center;gap:4px;font:700 11.5px var(--f-body);letter-spacing:.03em;padding:2px 8px;border-radius:999px;white-space:nowrap;background:var(--sunk);color:var(--muted)}
+.pill.Critical{background:var(--crit-soft);color:var(--crit)} .pill.High{background:var(--high-soft);color:var(--high)} .pill.Medium{background:var(--med-soft);color:var(--med)} .pill.Low{background:var(--low-soft);color:var(--low)}
+.pill.restricted{background:var(--restricted-soft);color:var(--restricted)}
+.pill.overdue{background:var(--crit);color:var(--surface)}
+.pill.closed{background:var(--low-soft);color:var(--low)}
+.pill.ex{background:none;border:1px dashed var(--muted)}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.sheet .head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 14px;font-size:14px;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;overflow-wrap:anywhere}
+.steps{display:flex;gap:4px;flex-wrap:wrap}
+.steps span{font-size:12px;padding:3px 9px;border-radius:6px;background:var(--sunk);color:var(--muted)}
+.steps span.on{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.steps span.past{background:var(--accent-soft);color:var(--ink)}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:13.5px}
+.log li{border-left:2px solid var(--line);padding-left:10px}
+.log time{font:12px var(--f-mono);color:var(--muted)}
+.empty{padding:28px 18px;color:var(--muted);text-align:center}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-block:18px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.tile .n{font:700 30px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
+.tile .l{font-size:13px;color:var(--muted)}
+.tile.warn .n{color:var(--crit)}
+.panels{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:800px){.panels{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.bars{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.barrow{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr) 2.5em;gap:10px;align-items:center;font-size:13.5px}
+.barrow .track{display:block;height:12px;background:var(--sunk);border-radius:6px;overflow:hidden}
+.barrow .fill{display:block;height:100%;background:var(--accent);border-radius:6px}
+.barrow .v{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--f-mono);font-size:13px}
+table.t{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:10px}
+table.t th,table.t td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.t th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+table.t td.num{font-variant-numeric:tabular-nums;font-family:var(--f-mono);text-align:right}
+.scroll{overflow-x:auto}
+.scale{display:flex;gap:4px;flex-wrap:wrap}
+.scale label{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid var(--line);border-radius:8px;cursor:pointer;font-family:var(--f-mono);font-weight:600}
+.scale input{position:absolute;opacity:0;width:1px;height:1px}
+.scale label:has(input:checked){background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.scale label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:700;z-index:20;max-width:calc(100% - 32px)}
+footer.site{border-top:1px solid var(--line);padding-block:20px 32px;font-size:13px;color:var(--muted)}
+footer.site a{color:inherit}
+@media (prefers-reduced-motion:no-preference){.item,.btn,.cat{transition:background-color .15s,border-color .15s}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="bar">
+      <a class="brand" href="https://experiencescaribbean.com/"><b>Experiences Caribbean</b><span>Feedback, complaints and incident reports</span></a>
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <button role="tab" id="tab-report" aria-selected="true" data-view="report">Report</button>
+        <button role="tab" id="tab-survey" aria-selected="false" data-view="survey">Trip survey</button>
+        <span class="sep" data-staff hidden></span>
+        <button role="tab" id="tab-register" aria-selected="false" data-view="register" data-staff hidden>Case register</button>
+        <button role="tab" id="tab-dashboard" aria-selected="false" data-view="dashboard" data-staff hidden>Dashboard</button>
+        <button role="tab" id="tab-signin" aria-selected="false" data-view="signin">Staff sign in</button>
+        <button type="button" id="signout" class="btn ghost small" hidden>Sign out</button>
+      </nav>
+    </div>
+    <div class="mode" id="mode" hidden></div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- REPORT -->
+<section id="view-report" class="stack">
+  <div>
+    <h1>Tell us what happened</h1>
+    <p class="lede">Use this form for complaints, compliments, accidents, near misses and any concern about safety, people or wildlife on our tours. Every report gets a reference number and a named person who follows it up.</p>
+  </div>
+  <div class="sos" role="note">
+    <div class="em"><b>Life-threatening emergency?</b><span>Call the emergency services first</span><a class="num" href="tel:999">999</a><span class="hint">Police, fire and ambulance in Dominica</span></div>
+    <div class="help"><b>Need help during your tour?</b><span>Call or WhatsApp us, then tell your guide</span><a class="num" id="helpnum" href="tel:+17676165827">+1 (767) 616-5827</a><span class="hint">Answered during tour operating hours</span></div>
+  </div>
+
+  <div class="who" role="group" aria-label="I am reporting as">
+    <button type="button" aria-pressed="true" data-role="guest" id="role-guest">I'm a guest or visitor</button>
+    <button type="button" aria-pressed="false" data-role="staff" id="role-staff">I'm staff, a guide or driver</button>
+  </div>
+
+  <form id="reportForm" class="stack" novalidate>
+    <fieldset>
+      <legend>What is this about?</legend>
+      <div class="cats" id="cats"></div>
+    </fieldset>
+
+    <div class="notice" id="restrictedNote" hidden></div>
+    <div class="warnbox" id="emergencyNote" hidden>Log this only once the emergency is under control and the duty manager has been called.</div>
+
+    <fieldset>
+      <legend>What happened</legend>
+      <div class="grid2">
+        <div class="field full"><label for="f-title">Short summary</label><input type="text" id="f-title" maxlength="200" placeholder="e.g. Guest slipped on wet steps at the waterfall"></div>
+        <div class="field"><label for="f-when">When did it happen?</label><input type="datetime-local" id="f-when"></div>
+        <div class="field"><label for="f-where">Where?</label><input type="text" id="f-where" maxlength="200" placeholder="Site, vehicle, hotel or town"></div>
+        <div class="field"><label for="f-tour">Tour or booking reference <span class="hint">(if known)</span></label><input type="text" id="f-tour" maxlength="200" placeholder="e.g. Waterfall Trail, 26 Oct"></div>
+        <div class="field"><label for="f-sev">How serious is it?</label><select id="f-sev"><option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option></select></div>
+        <div class="field" id="channelField" hidden><label for="f-channel">How was this reported to you?</label><select id="f-channel"><option>Web form</option><option>Phone</option><option>Email</option><option>In person</option></select></div>
+        <div class="field full"><label for="f-desc">Describe it in your own words</label><textarea id="f-desc" maxlength="8000" placeholder="What happened, who was involved, and what was done at the time"></textarea></div>
+      </div>
+    </fieldset>
+
+    <fieldset id="xInjury" hidden>
+      <legend>Accident or injury details</legend>
+      <div class="grid2">
+        <div class="field"><label for="x-persons">People involved</label><input type="text" id="x-persons" placeholder="Number and role (guest, guide…)"></div>
+        <div class="field"><label for="x-injury">Injury or illness</label><input type="text" id="x-injury" placeholder="e.g. sprained left ankle"></div>
+        <label class="check"><input type="checkbox" id="x-firstaid"> First aid given</label>
+        <label class="check"><input type="checkbox" id="x-hospital"> Taken to clinic or hospital</label>
+        <label class="check"><input type="checkbox" id="x-authorities"> Police or authorities notified</label>
+        <label class="check"><input type="checkbox" id="x-insurer"> Insurer notified</label>
+        <div class="field full"><label for="x-witness">Witnesses</label><input type="text" id="x-witness" placeholder="Names or roles of anyone who saw it"></div>
+      </div>
+    </fieldset>
+
+    <fieldset id="xSupplier" hidden>
+      <legend>Supplier involved</legend>
+      <div class="grid2">
+        <div class="field"><label for="x-supplier">Supplier name</label><input type="text" id="x-supplier" placeholder="Hotel, boat operator, attraction…"></div>
+        <div class="field"><label for="x-stype">Supplier type</label><select id="x-stype"><option value="">Choose…</option><option>Accommodation</option><option>Transport</option><option>Excursion / activity</option><option>Guide</option><option>Restaurant</option><option>Other</option></select></div>
+      </div>
+    </fieldset>
+
+    <fieldset id="xContact">
+      <legend>How can we reach you?</legend>
+      <div class="grid2">
+        <label class="check field full"><input type="checkbox" id="c-anon"> <span>Report anonymously <span class="hint">— we won't be able to reply to you</span></span></label>
+        <div class="field"><label for="c-name">Name</label><input type="text" id="c-name" autocomplete="name"></div>
+        <div class="field"><label for="c-email">Email</label><input type="email" id="c-email" autocomplete="email"></div>
+        <div class="field"><label for="c-phone">Phone or WhatsApp</label><input type="tel" id="c-phone" autocomplete="tel"></div>
+        <div class="field"><label for="c-lang">Preferred language</label><select id="c-lang"><option>English</option><option>French</option><option>Kwéyòl</option><option>Spanish</option><option>German</option><option>Other</option></select></div>
+        <label class="check field full"><input type="checkbox" id="c-consent"> I agree that my details are used only to handle this report and are kept no longer than needed.</label>
+      </div>
+    </fieldset>
+
+    <div class="row"><button class="btn" type="submit" id="submitBtn">Send report</button><span class="hint" id="formMsg" role="status"></span></div>
+  </form>
+
+  <div class="done" id="doneBox" hidden>
+    <h2>Thank you. Your report is logged.</h2>
+    <p>Reference <span class="ref" id="doneRef"></span>. <span id="doneWhen"></span> Keep this reference if you contact us about it.</p>
+    <button class="btn ghost small" type="button" id="another">Send another report</button>
+  </div>
+</section>
+
+<!-- SURVEY -->
+<section id="view-survey" class="stack" hidden>
+  <div>
+    <h1>How was your trip?</h1>
+    <p class="lede">Two minutes. Your answers help us improve our tours and how we look after Dominica's nature and communities. If something went wrong, a member of our team will follow it up.</p>
+  </div>
+  <form id="surveyForm" class="stack" novalidate>
+    <fieldset><legend>Your trip</legend>
+      <div class="grid2">
+        <div class="field"><label for="s-tour">Tour or booking reference</label><input type="text" id="s-tour" maxlength="200"></div>
+        <div class="field"><label for="s-date">Travel date</label><input type="date" id="s-date"></div>
+      </div>
+    </fieldset>
+    <fieldset><legend>Scores, 1 = poor, 10 = excellent</legend><div class="stack" id="scales"></div></fieldset>
+    <fieldset><legend>Responsible travel</legend>
+      <div class="stack">
+        <label class="check"><input type="checkbox" id="s-info"> We received useful information on local culture, dos and don'ts, and protecting nature</label>
+        <label class="check"><input type="checkbox" id="s-local"> The trip supported local people (local guides, food, crafts)</label>
+        <label class="check"><input type="checkbox" id="s-wildlife"> Wildlife and nature were treated respectfully</label>
+      </div>
+    </fieldset>
+    <fieldset><legend>Anything else</legend>
+      <div class="grid2">
+        <div class="field full"><label for="s-comment">Comments</label><textarea id="s-comment" maxlength="8000"></textarea></div>
+        <label class="check field full"><input type="checkbox" id="s-follow"> Please contact me about my comments</label>
+        <div class="field"><label for="s-email">Email <span class="hint">(only if you want a reply)</span></label><input type="email" id="s-email" autocomplete="email"></div>
+      </div>
+    </fieldset>
+    <div class="row"><button class="btn" type="submit" id="surveyBtn">Send feedback</button><span class="hint" id="surveyMsg" role="status"></span></div>
+  </form>
+</section>
+
+<!-- SIGN IN -->
+<section id="view-signin" class="stack narrow" hidden>
+  <div>
+    <h1>Staff sign in</h1>
+    <p class="lede">For Experiences Caribbean staff handling reports. Guests don't need an account.</p>
+  </div>
+  <form id="signinForm" class="stack" novalidate>
+    <div class="field"><label for="si-email">Work email</label><input type="email" id="si-email" autocomplete="email" required></div>
+    <div class="row"><button class="btn" type="submit" id="si-send">Email me a sign-in link</button></div>
+  </form>
+  <form id="codeForm" class="stack" novalidate hidden>
+    <p class="hint" style="margin:0">Open the link in the email on this device, or type the 6-digit code from the email here.</p>
+    <div class="field"><label for="si-code">Code from the email</label><input type="text" id="si-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10"></div>
+    <div class="row"><button class="btn" type="submit">Sign in</button><button class="btn ghost small" type="button" id="si-back">Use a different email</button></div>
+  </form>
+  <span class="hint" id="siMsg" role="status"></span>
+</section>
+
+<!-- REGISTER -->
+<section id="view-register" hidden>
+  <div class="row" style="justify-content:space-between;align-items:flex-end">
+    <div><h1>Case register</h1>
+    <p class="lede">Every report from every channel. Open a case to assign an owner, record the root cause and corrective action, and close it with a reply to the reporter.</p></div>
+    <div class="row"><button class="btn small ghost" type="button" id="refreshBtn">Refresh</button><button class="btn small" type="button" id="logBtn">Log a phone or email report</button></div>
+  </div>
+  <div class="filters">
+    <input type="text" id="q" placeholder="Search summary, place, reference" aria-label="Search">
+    <select id="fCat" aria-label="Category"><option value="">All categories</option></select>
+    <select id="fStatus" aria-label="Status"><option value="">All statuses</option><option value="open">Open (not closed)</option></select>
+    <select id="fSev" aria-label="Severity"><option value="">All severities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+  </div>
+  <div class="reg">
+    <div class="list" id="list" aria-label="Cases"></div>
+    <div class="sheet" id="sheet"><div class="empty">Choose a case to see its details.</div></div>
+  </div>
+</section>
+
+<!-- DASHBOARD -->
+<section id="view-dashboard" hidden>
+  <div class="row" style="justify-content:space-between">
+    <div><h1>Dashboard</h1><p class="lede">Figures for the monthly review and the annual management report (Travelife 1.23, 10.28).</p></div>
+    <div class="row"><label for="period" class="lbl">Period</label><select id="period" style="width:auto"><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365" selected>Last 12 months</option><option value="0">All time</option></select>
+    <button class="btn small" type="button" id="exportBtn">Export CSV</button></div>
+  </div>
+  <div class="tiles" id="tiles"></div>
+  <div class="panels">
+    <div class="panel"><h3>Cases by category</h3><p class="hint" id="catHint" style="margin:4px 0 0"></p><div class="bars" id="byCat"></div></div>
+    <div class="panel"><h3>Root causes of closed cases</h3><div class="bars" id="byCause"></div></div>
+    <div class="panel"><h3>Open corrective actions</h3><div class="scroll"><table class="t" id="actions"></table></div></div>
+    <div class="panel"><h3>Post-trip satisfaction</h3><div id="sat"></div></div>
+  </div>
+</section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    Jungle Trekking Adventures and Safari Inc. trading as Experiences Caribbean ·
+    Your details are used only to handle your report. See our <a href="https://experiencescaribbean.com/our-policies/">policies and privacy notice</a> ·
+    <a href="https://experiencescaribbean.com/">Back to experiencescaribbean.com</a>
+  </div>
+</footer>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(function(){
+"use strict";
+
+// ---------- configuration: fill in after the Supabase project exists ----------
+// Leave supabaseUrl empty to run in demo mode with example data.
+const CONFIG = {
+  supabaseUrl: "https://krlsgdqkfxgtivrjndcq.supabase.co",   // Supabase project "TravelLife"
+  supabaseKey: "sb_publishable_xTRRDev4APnQuBCmUCV3zA_XtADh-F-", // publishable key — safe to publish
+  helpNumber: "+1 (767) 616-5827",
+  helpTel: "+17676165827"
+};
+
+// ---------- reference data ----------
+const CATS = [
+  {id:"complaint", name:"Complaint", desc:"Service, booking, guide or information problem", sev:"Medium", ack:2, resolve:14, crit:"10.30", who:"both"},
+  {id:"compliment", name:"Compliment or suggestion", desc:"Praise, an idea, a question about our sustainability", sev:"Low", ack:5, resolve:30, crit:"1.26", who:"both"},
+  {id:"injury", name:"Accident, injury or illness", desc:"Someone was hurt or fell ill", sev:"High", ack:0, resolve:14, crit:"2.16", who:"both", x:"injury"},
+  {id:"nearmiss", name:"Near miss or safety hazard", desc:"Nobody was hurt, but someone could have been", sev:"Medium", ack:2, resolve:30, crit:"2.16", who:"both"},
+  {id:"emergency", name:"Emergency (log after calling)", desc:"Missing guest, serious accident, hazard", sev:"Critical", ack:0, resolve:7, crit:"10.19 · 10.20", who:"staff", x:"injury"},
+  {id:"supplier", name:"Supplier, wildlife or environment", desc:"Animal welfare, pollution, unfair treatment at a supplier", sev:"Medium", ack:2, resolve:30, crit:"7.9 · 7.10 · 7.12", who:"both", x:"supplier"},
+  {id:"safeguarding", name:"Child protection or exploitation", desc:"Suspected exploitation or harassment of anyone", sev:"Critical", ack:0, resolve:7, crit:"9.11", who:"both", restricted:true},
+  {id:"grievance", name:"Staff grievance or representation", desc:"Pay, hours, treatment at work, a proposal", sev:"Medium", ack:5, resolve:30, crit:"2.19 · 2.20", who:"staff", restricted:true},
+  {id:"ethics", name:"Ethics or whistleblowing", desc:"Bribery, fraud, breaking the law or our code", sev:"High", ack:5, resolve:30, crit:"1.29", who:"both", restricted:true}
+];
+const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
+const STATUSES = ["New","Acknowledged","Investigating","Action in progress","Closed"];
+const CAUSES = ["People (training, conduct)","Process or procedure","Supplier","Equipment or vehicle","Weather or environment","Guest behaviour","Information given to guest","Not yet known"];
+const SCALES = [["overall","Overall trip"],["guide","Guide or tour leader"],["transport","Transport and safety"],["accommodation","Accommodation"],["value","Value for money"]];
+const SEV_ORDER = {Critical:0,High:1,Medium:2,Low:3};
+const DAY = 864e5;
+const STAFF_VIEWS = ["register","dashboard"];
+
+// ---------- state ----------
+const demo = !CONFIG.supabaseUrl || !CONFIG.supabaseKey || !window.supabase;
+let sb = null, staff = null, cases = [], surveys = [], counts = null, selected = null, role = "guest", refreshTimer = null;
+const qs = new URLSearchParams(location.search);
+const hadAuthHash = /access_token=|error_description=/.test(location.hash);
+
+const $ = s=>document.querySelector(s);
+const el = (tag, attrs={}, ...kids)=>{const n=document.createElement(tag);for(const[k,v] of Object.entries(attrs)){if(v==null||v===false)continue;if(k==="class")n.className=v;else if(k==="text")n.textContent=v;else if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else n.setAttribute(k,v===true?"":v)}for(const k of kids.flat()){if(k==null)continue;n.append(k.nodeType?k:document.createTextNode(String(k)))}return n};
+const fmt = ms=>{if(!ms)return"—";const d=new Date(ms);return d.toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"})+" "+d.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"})};
+const fmtD = ms=>ms?new Date(ms).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}):"—";
+const ms = v=>v?Date.parse(v):null;
+const dayMs = v=>v?Date.parse(v+"T12:00:00"):null;
+const isoDay = m=>m?new Date(m-new Date(m).getTimezoneOffset()*6e4).toISOString().slice(0,10):null;
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2800)}
+function makeRef(at){const d=new Date(at),p=n=>String(n).padStart(2,"0");return "TL-"+String(d.getFullYear()).slice(2)+p(d.getMonth()+1)+p(d.getDate())+"-"+Math.random().toString(36).slice(2,6).toUpperCase()}
+function dueFor(c){const cat=CAT[c.category]||CAT.complaint;return c.receivedAt+cat.resolve*DAY}
+function isOverdue(c){return c.status!=="Closed" && Date.now()>dueFor(c)}
+function errText(e){const m=(e&&(e.message||e.error_description))||"";return m.replace(/^.*?ERROR:\s*/,"")||"Something went wrong. Try again."}
+function isStaffUI(){return demo || !!staff}
+
+// ---------- database rows <-> page objects ----------
+function fromRow(r){
+  return {id:r.id, ref:r.ref, category:r.category, severity:r.severity, status:r.status, reporterType:r.reporter_type, channel:r.channel,
+    anonymous:r.anonymous, restricted:r.restricted, title:r.title, description:r.description, place:r.place, tour:r.tour,
+    occurredAt:ms(r.occurred_at), receivedAt:ms(r.received_at), acknowledgedAt:ms(r.acknowledged_at), closedAt:ms(r.closed_at),
+    contact:r.contact||{}, extras:r.extras||{}, owner:r.owner, rootCause:r.root_cause, findings:r.findings, action:r.action,
+    actionDue:dayMs(r.action_due), actionDone:dayMs(r.action_done), effective:r.effective, responseSent:r.response_sent,
+    log:(r.log||[]).map(l=>({at:ms(l.at), note:l.note, by:l.by}))};
+}
+function surveyFromRow(r){return {id:r.id, at:ms(r.submitted_at), tour:r.tour, scores:r.scores||{}, sustain:r.sustain||{}, comment:r.comment}}
+
+// ---------- example data (demo mode only) ----------
+function examples(){
+  const now=Date.now(), mk=(o)=>Object.assign({example:true,channel:"Web form",log:[],anonymous:false,extras:{},contact:{}},o);
+  return [
+    mk({id:"ex1",ref:"TL-EXAMPLE-01",category:"injury",severity:"High",reporterType:"staff",title:"Guest slipped on wet steps at the waterfall",place:"Trafalgar Falls viewing path",tour:"Waterfall Trail",occurredAt:now-3*DAY,receivedAt:now-3*DAY+36e5,status:"Action in progress",owner:"Operations manager",rootCause:"Equipment or vehicle",findings:"Handrail missing on lower section after storm.",action:"Request site authority repair; brief guides to use upper path until fixed",actionDue:now+5*DAY,description:"Guest lost footing on the last steps, sprained ankle. Guide gave first aid and drove guest to clinic.",extras:{persons:"1 guest",injury:"Sprained ankle",firstaid:true,hospital:true}}),
+    mk({id:"ex2",ref:"TL-EXAMPLE-02",category:"complaint",severity:"Medium",reporterType:"guest",title:"Pick-up 45 minutes late, no message",place:"Roseau cruise berth",tour:"Island highlights",occurredAt:now-9*DAY,receivedAt:now-8*DAY,status:"Closed",owner:"Reservations lead",rootCause:"Process or procedure",findings:"Driver not told of revised ship arrival time.",action:"Dispatcher now confirms ship times with drivers each morning",actionDue:now-2*DAY,actionDone:now-3*DAY,effective:true,responseSent:true,closedAt:now-2*DAY,description:"We waited in the sun with two children and nobody answered the phone."}),
+    mk({id:"ex3",ref:"TL-EXAMPLE-03",category:"supplier",severity:"Medium",reporterType:"guest",title:"Boat approached whales too closely",place:"West coast",tour:"Whale watching",occurredAt:now-20*DAY,receivedAt:now-19*DAY,status:"Investigating",owner:"Sustainability coordinator",rootCause:"Supplier",description:"The skipper chased a mother and calf for several minutes.",extras:{supplier:"Example boat operator",stype:"Excursion / activity"}}),
+    mk({id:"ex4",ref:"TL-EXAMPLE-04",category:"nearmiss",severity:"Medium",reporterType:"staff",title:"Bald front tyre found on minibus 3",place:"Depot",occurredAt:now-40*DAY,receivedAt:now-40*DAY,status:"Closed",owner:"Fleet supervisor",rootCause:"Equipment or vehicle",action:"Weekly tyre check added to vehicle checklist",actionDone:now-35*DAY,effective:true,closedAt:now-34*DAY,description:"Spotted during morning walk-round before departure."}),
+    mk({id:"ex5",ref:"TL-EXAMPLE-05",category:"compliment",severity:"Low",reporterType:"guest",title:"Guide explained Kalinago history brilliantly",place:"Kalinago Territory",occurredAt:now-6*DAY,receivedAt:now-5*DAY,status:"New",description:"Best part of our holiday."}),
+    mk({id:"ex6",ref:"TL-EXAMPLE-06",category:"grievance",severity:"Medium",reporterType:"staff",title:"Overtime on cruise days not being paid",place:"Office",occurredAt:now-12*DAY,receivedAt:now-12*DAY,status:"Acknowledged",owner:"Director (HR)",anonymous:true,restricted:true,description:"Several guides are working 11-hour days on double-ship days."})
+  ];
+}
+function exampleSurveys(){const now=Date.now();return [[9,10,8,8,9],[7,9,6,7,7],[10,10,9,9,8],[5,6,4,6,5],[8,9,8,7,8]].map((s,i)=>({id:"exs"+i,example:true,at:now-(i*9+2)*DAY,scores:{overall:s[0],guide:s[1],transport:s[2],accommodation:s[3],value:s[4]},sustain:{info:i!==3,local:true,wildlife:i!==1}}))}
+
+// ---------- report form ----------
+function renderCats(){
+  const box=$("#cats"); const prev=(document.querySelector('input[name="cat"]:checked')||{}).value; box.replaceChildren();
+  CATS.filter(c=>c.who==="both"||role==="staff").forEach((c,i)=>{
+    const id="cat-"+c.id;
+    box.append(el("label",{class:"cat",for:id},el("input",{type:"radio",name:"cat",id,value:c.id,checked:(prev?prev===c.id:i===0)}),el("div",{},el("b",{text:c.name}),el("span",{text:c.desc}))));
+  });
+  if(!document.querySelector('input[name="cat"]:checked')) box.querySelector("input").checked=true;
+  onCat();
+}
+function currentCat(){return CAT[(document.querySelector('input[name="cat"]:checked')||{}).value]||CATS[0]}
+function onCat(){
+  const c=currentCat();
+  $("#f-sev").value=c.sev;
+  $("#xInjury").hidden=c.x!=="injury";
+  $("#xSupplier").hidden=c.x!=="supplier";
+  $("#emergencyNote").hidden=c.id!=="emergency";
+  const note=$("#restrictedNote");
+  if(c.restricted){note.hidden=false;note.textContent=c.id==="safeguarding"
+    ? "This goes only to our safeguarding lead. If a child is in immediate danger, call 999 first. You can report anonymously."
+    : "This goes only to the designated manager, never to anyone named in your report. You can report anonymously and no one will face negative consequences for reporting in good faith.";}
+  else note.hidden=true;
+}
+function setRole(r){role=r;$("#role-guest").setAttribute("aria-pressed",r==="guest");$("#role-staff").setAttribute("aria-pressed",r==="staff");renderCats()}
+function onAnon(){const a=$("#c-anon").checked;["#c-name","#c-email","#c-phone"].forEach(s=>{$(s).disabled=a;if(a)$(s).value=""});$("#c-consent").disabled=a}
+
+async function submitReport(e){
+  e.preventDefault();
+  const msg=$("#formMsg"), cat=currentCat().id;
+  const title=$("#f-title").value.trim(), desc=$("#f-desc").value.trim(), anon=$("#c-anon").checked;
+  if(!title||!desc){msg.textContent="Add a short summary and a description so we can follow up.";(title?$("#f-desc"):$("#f-title")).focus();return}
+  const email=$("#c-email").value.trim(), phone=$("#c-phone").value.trim();
+  if(!anon&&(email||phone)&&!$("#c-consent").checked){msg.textContent="Tick the consent box so we can use your contact details, or report anonymously.";$("#c-consent").focus();return}
+  if(!anon&&email&&!$("#c-email").checkValidity()){msg.textContent="Check the email address.";$("#c-email").focus();return}
+  const now=Date.now(), whenV=$("#f-when").value, when=whenV?Date.parse(whenV):now;
+  const extras={};
+  if(CAT[cat].x==="injury")Object.assign(extras,{persons:$("#x-persons").value.trim(),injury:$("#x-injury").value.trim(),firstaid:$("#x-firstaid").checked,hospital:$("#x-hospital").checked,authorities:$("#x-authorities").checked,insurer:$("#x-insurer").checked,witness:$("#x-witness").value.trim()});
+  if(CAT[cat].x==="supplier")Object.assign(extras,{supplier:$("#x-supplier").value.trim(),stype:$("#x-stype").value});
+  const contact=anon?{}:{name:$("#c-name").value.trim(),email,phone,lang:$("#c-lang").value,consent:$("#c-consent").checked};
+  const channel=staff&&!$("#channelField").hidden?$("#f-channel").value:"Web form";
+  $("#submitBtn").disabled=true; msg.textContent="Sending…";
+  let ref=null;
+  if(!demo){
+    const {data,error}=await sb.rpc("submit_report",{p:{category:cat,severity:$("#f-sev").value,reporter_type:role,title,description:desc,
+      place:$("#f-where").value.trim(),tour:$("#f-tour").value.trim(),occurred_at:new Date(when).toISOString(),anonymous:anon,contact,extras,channel}});
+    if(error){$("#submitBtn").disabled=false;msg.textContent=errText(error)+" If it keeps failing, call us on "+CONFIG.helpNumber+".";return}
+    ref=data;
+    if(staff)loadData();
+  } else {
+    ref=makeRef(now);
+    cases.unshift({id:"local"+now,ref,category:cat,severity:$("#f-sev").value,reporterType:role,channel,title,description:desc,place:$("#f-where").value.trim(),tour:$("#f-tour").value.trim(),
+      occurredAt:when,receivedAt:now,status:"New",anonymous:anon,restricted:!!CAT[cat].restricted,contact,extras,log:[{at:now,note:channel==="Web form"?"Report received via web form":"Logged by staff from "+channel.toLowerCase()}]});
+    renderAll();
+  }
+  $("#submitBtn").disabled=false; msg.textContent="";
+  $("#reportForm").reset(); onAnon(); prefill(); renderCats();
+  $("#doneRef").textContent=ref;
+  const cd=CAT[cat];
+  $("#doneWhen").textContent=cd.ack===0?"Someone will look at it today.":"We'll acknowledge it within "+cd.ack+" working day"+(cd.ack>1?"s":"")+" and aim to resolve it within "+cd.resolve+" days.";
+  $("#reportForm").hidden=true;$("#doneBox").hidden=false;$("#doneBox").scrollIntoView({block:"center"});
+}
+
+// ---------- loading (live) ----------
+async function loadData(){
+  if(demo||!staff)return;
+  const since=+$("#period").value?new Date(Date.now()-$("#period").value*DAY).toISOString():null;
+  const [c,s,k]=await Promise.all([
+    sb.from("cases").select("*").order("received_at",{ascending:false}).limit(2000),
+    sb.from("surveys").select("id,submitted_at,tour,scores,sustain,comment").order("submitted_at",{ascending:false}).limit(2000),
+    sb.rpc("register_counts",{since})
+  ]);
+  if(c.error){toast("Couldn't load cases: "+errText(c.error));return}
+  cases=(c.data||[]).map(fromRow);
+  surveys=s.error?[]:(s.data||[]).map(surveyFromRow);
+  counts=k.error?null:(k.data||[]);
+  if(!cases.some(x=>x.id===selected))selected=cases.length?cases[0].id:null;
+  renderAll();
+}
+
+// ---------- register ----------
+function filtered(){
+  const q=$("#q").value.trim().toLowerCase(), fc=$("#fCat").value, fs=$("#fStatus").value, fv=$("#fSev").value;
+  return cases.filter(c=>(!fc||c.category===fc)&&(!fv||c.severity===fv)&&(!fs||(fs==="open"?c.status!=="Closed":c.status===fs))
+    &&(!q||[c.title,c.place,c.ref,c.tour,c.description].join(" ").toLowerCase().includes(q)))
+    .sort((a,b)=>(a.status==="Closed")-(b.status==="Closed")||SEV_ORDER[a.severity]-SEV_ORDER[b.severity]||b.receivedAt-a.receivedAt);
+}
+function pills(c){
+  const p=[el("span",{class:"pill "+c.severity,text:c.severity})];
+  if(c.status==="Closed")p.push(el("span",{class:"pill closed",text:"Closed"}));
+  else if(isOverdue(c))p.push(el("span",{class:"pill overdue",text:"Overdue"}));
+  else p.push(el("span",{class:"pill",text:c.status}));
+  return p;
+}
+function renderList(){
+  const list=$("#list"), rows=filtered(); list.replaceChildren();
+  if(!cases.length){list.append(el("div",{class:"empty"},"No cases yet. Reports from the website, the survey and logged phone or email reports appear here."));return}
+  if(!rows.length){list.append(el("div",{class:"empty",text:"No cases match these filters."}));return}
+  rows.forEach(c=>{
+    const cat=CAT[c.category]||{name:c.category};
+    const meta=[c.ref, cat.name, fmtD(c.receivedAt)].join(" · ");
+    list.append(el("button",{type:"button",class:"item sev-"+c.severity,"aria-current":selected===c.id?"true":"false",onclick:()=>{selected=c.id;renderList();renderSheet()}},
+      el("span",{class:"stripe"}),
+      el("span",{class:"main"},el("span",{class:"t",text:c.title}),el("span",{class:"m",text:meta})),
+      el("span",{class:"side"},pills(c),c.restricted?el("span",{class:"pill restricted",text:"Restricted"}):null,c.example?el("span",{class:"pill ex",text:"Example"}):null)));
+  });
+}
+function renderSheet(){
+  const s=$("#sheet"), c=cases.find(x=>x.id===selected); s.replaceChildren();
+  if(!c){s.append(el("div",{class:"empty",text:"Choose a case to see its details."}));return}
+  const cat=CAT[c.category]||{name:c.category,crit:""};
+  const si=STATUSES.indexOf(c.status);
+  s.append(el("div",{class:"head"},el("div",{},el("div",{class:"ref",text:c.ref}),el("h2",{text:c.title})),el("div",{class:"row"},pills(c),c.restricted?el("span",{class:"pill restricted",text:"Restricted"}):null,c.example?el("span",{class:"pill ex",text:"Example"}):null)));
+  s.append(el("div",{class:"steps","aria-label":"Progress"},STATUSES.map((st,i)=>el("span",{class:i===si?"on":i<si?"past":"",text:st}))));
+  if(c.restricted)s.append(el("div",{class:"notice",text:"Restricted case: only its designated handler can see it. Do not discuss it outside that role."}));
+  const kv=el("dl",{class:"kv"});
+  const add=(k,v)=>{if(v===undefined||v===null||v==="")return;kv.append(el("dt",{text:k}),el("dd",{text:v}))};
+  add("Category",cat.name+(cat.crit?"  (Travelife "+cat.crit+")":""));
+  add("Reported by",(c.anonymous?"Anonymous ":"")+(c.reporterType==="staff"?"staff / guide":"guest / visitor")+" · "+(c.channel||""));
+  add("Happened",fmt(c.occurredAt)); add("Received",fmt(c.receivedAt)); add("Due to close",fmtD(dueFor(c)));
+  add("Where",c.place); add("Tour",c.tour);
+  if(c.contact&&(c.contact.name||c.contact.email||c.contact.phone))add("Contact",[c.contact.name,c.contact.email,c.contact.phone,c.contact.lang].filter(Boolean).join(" · "));
+  const x=c.extras||{};
+  add("People involved",x.persons); add("Injury / illness",x.injury);
+  const flags=[x.firstaid&&"first aid",x.hospital&&"clinic / hospital",x.authorities&&"authorities notified",x.insurer&&"insurer notified"].filter(Boolean);
+  if(flags.length)add("Response",flags.join(", ")); add("Witnesses",x.witness);
+  add("Supplier",[x.supplier,x.stype].filter(Boolean).join(" · "));
+  s.append(kv, el("p",{style:"margin:0;white-space:pre-wrap",text:c.description}));
+
+  const f=el("form",{class:"stack",novalidate:true});
+  const sel=(id,label,opts,val)=>el("div",{class:"field"},el("label",{for:id,text:label}),el("select",{id},opts.map(o=>el("option",{value:o,selected:o===val,text:o||"Choose…"}))));
+  const inp=(id,label,val,type="text")=>el("div",{class:"field"},el("label",{for:id,text:label}),el("input",{type,id,value:val||""}));
+  const ta=(id,label,val)=>el("div",{class:"field full"},el("label",{for:id,text:label}),el("textarea",{id},val||""));
+  f.append(el("fieldset",{},el("legend",{text:"Handling"}),el("div",{class:"grid2"},
+    sel("h-status","Status",STATUSES,c.status), inp("h-owner","Case owner",c.owner),
+    sel("h-sev","Severity",["Low","Medium","High","Critical"],c.severity),
+    sel("h-cause","Root cause (1.19)",[""].concat(CAUSES),c.rootCause||""),
+    ta("h-find","Findings",c.findings))));
+  f.append(el("fieldset",{},el("legend",{text:"Corrective action"}),el("div",{class:"grid2"},
+    ta("h-action","Action to prevent it happening again",c.action),
+    inp("h-adue","Action due",isoDay(c.actionDue),"date"), inp("h-adone","Action completed",isoDay(c.actionDone),"date"),
+    el("label",{class:"check"},el("input",{type:"checkbox",id:"h-eff",checked:!!c.effective})," Checked the action worked"),
+    el("label",{class:"check"},el("input",{type:"checkbox",id:"h-resp",checked:!!c.responseSent})," Reply sent to the reporter"),
+    ta("h-note","Add a note to the case log",""))));
+  const saveBtn=el("button",{class:"btn",type:"submit"},"Save changes");
+  const fm=el("span",{class:"hint",role:"status"});
+  f.append(el("div",{class:"row"},saveBtn,fm));
+  f.addEventListener("submit",async ev=>{
+    ev.preventDefault();
+    const g=id=>f.querySelector("#"+id);
+    const v={status:g("h-status").value,owner:g("h-owner").value.trim(),severity:g("h-sev").value,rootCause:g("h-cause").value,findings:g("h-find").value.trim(),
+      action:g("h-action").value.trim(),actionDue:g("h-adue").value||null,actionDone:g("h-adone").value||null,effective:g("h-eff").checked,responseSent:g("h-resp").checked};
+    if(v.status==="Closed"&&(!v.rootCause||!v.action)){fm.textContent="Add a root cause and a corrective action before closing (criterion 1.19).";return}
+    if(v.status==="Closed"&&!c.anonymous&&!v.responseSent&&(c.contact||{}).email){fm.textContent="Tick 'Reply sent' before closing a case with a contactable reporter.";return}
+    const now=Date.now(), by=staff?staff.full_name:"Demo user", log=(c.log||[]).slice();
+    if(c.status!==v.status)log.push({at:now,note:"Status: "+c.status+" → "+v.status,by});
+    if(c.owner!==v.owner&&v.owner)log.push({at:now,note:"Owner: "+v.owner,by});
+    const note=g("h-note").value.trim(); if(note)log.push({at:now,note,by});
+    const trimmed=log.slice(-300);
+    saveBtn.disabled=true; fm.textContent="Saving…";
+    if(!demo){
+      const {error}=await sb.from("cases").update({status:v.status,owner:v.owner||null,severity:v.severity,root_cause:v.rootCause||null,findings:v.findings||null,
+        action:v.action||null,action_due:v.actionDue,action_done:v.actionDone,effective:v.effective,response_sent:v.responseSent,
+        log:trimmed.map(l=>({at:new Date(l.at).toISOString(),note:l.note,by:l.by}))}).eq("id",c.id);
+      saveBtn.disabled=false;
+      if(error){fm.textContent=errText(error);return}
+      toast("Case "+c.ref+" saved"); await loadData();
+    } else {
+      Object.assign(c,v,{actionDue:dayMs(v.actionDue),actionDone:dayMs(v.actionDone),log:trimmed});
+      if(v.status!=="New"&&!c.acknowledgedAt)c.acknowledgedAt=now;
+      c.closedAt=v.status==="Closed"?(c.closedAt||now):null;
+      saveBtn.disabled=false; toast("Case "+c.ref+" saved"); renderAll();
+    }
+  });
+  s.append(f);
+  if(c.log&&c.log.length){s.append(el("h3",{text:"Case log"}),el("ol",{class:"log"},c.log.slice().reverse().map(l=>el("li",{},el("time",{text:fmt(l.at)+(l.by?" · "+l.by:"")}),el("div",{text:l.note})))))}
+}
+
+// ---------- dashboard ----------
+function inPeriod(m){const p=+$("#period").value;return !p||Date.now()-m<=p*DAY}
+function bars(target, pairs){
+  const t=$(target); t.replaceChildren(); const max=Math.max(1,...pairs.map(p=>p[1]));
+  if(!pairs.some(p=>p[1])){t.append(el("p",{class:"hint",text:"Nothing in this period."}));return}
+  pairs.filter(p=>p[1]).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{t.append(el("div",{class:"barrow"},el("span",{text:k}),el("span",{class:"track"},el("span",{class:"fill",style:"width:"+(v/max*100).toFixed(1)+"%"})),el("span",{class:"v",text:v})))});
+}
+function renderDash(){
+  const cs=cases.filter(c=>inPeriod(c.receivedAt)), open=cs.filter(c=>c.status!=="Closed"), closed=cs.filter(c=>c.status==="Closed"&&c.closedAt);
+  const totalAll=counts?counts.reduce((a,r)=>a+Number(r.total),0):cs.length;
+  const openAll=counts?counts.reduce((a,r)=>a+Number(r.open),0):open.length;
+  const overdue=open.filter(isOverdue).length;
+  const days=closed.map(c=>(c.closedAt-c.receivedAt)/DAY); const avg=days.length?(days.reduce((a,b)=>a+b,0)/days.length):null;
+  const withAction=closed.filter(c=>c.action&&c.effective).length;
+  const sv=surveys.filter(s=>inPeriod(s.at)); const ov=sv.map(s=>s.scores&&s.scores.overall).filter(n=>n);
+  const tiles=[["Cases received",totalAll],["Open now",openAll],["Overdue",overdue,overdue>0],["Average days to close",avg==null?"—":avg.toFixed(1)],["Closed with verified action",closed.length?Math.round(withAction/closed.length*100)+"%":"—"],["Average trip score",ov.length?(ov.reduce((a,b)=>a+b,0)/ov.length).toFixed(1)+" / 10":"—"]];
+  $("#tiles").replaceChildren(...tiles.map(([l,n,w])=>el("div",{class:"tile"+(w?" warn":"")},el("div",{class:"n",text:n}),el("div",{class:"l",text:l}))));
+  const byCat=counts?CATS.map(c=>{const r=counts.find(x=>x.category===c.id);return [c.name,r?Number(r.total):0]}):CATS.map(c=>[c.name,cs.filter(x=>x.category===c.id).length]);
+  bars("#byCat",byCat);
+  $("#catHint").textContent=counts?"Totals include restricted cases. Their details are visible only to their handlers.":"";
+  bars("#byCause",CAUSES.map(k=>[k,closed.filter(x=>x.rootCause===k).length]));
+  const acts=cases.filter(c=>c.action&&!c.actionDone).sort((a,b)=>(a.actionDue||9e15)-(b.actionDue||9e15));
+  const t=$("#actions"); t.replaceChildren();
+  if(!acts.length)t.append(el("tbody",{},el("tr",{},el("td",{class:"hint",text:"No open corrective actions."}))));
+  else t.append(el("thead",{},el("tr",{},el("th",{text:"Case"}),el("th",{text:"Action"}),el("th",{text:"Owner"}),el("th",{text:"Due"}))),
+    el("tbody",{},acts.map(c=>el("tr",{},el("td",{class:"ref",style:"font-size:12px",text:c.ref}),el("td",{text:c.action}),el("td",{text:c.owner||"—"}),el("td",{text:fmtD(c.actionDue),style:c.actionDue&&c.actionDue<Date.now()?"color:var(--crit);font-weight:700":null})))));
+  const sat=$("#sat"); sat.replaceChildren();
+  if(!sv.length){sat.append(el("p",{class:"hint",text:"No survey responses in this period."}));}
+  else{
+    const tb=el("table",{class:"t"},el("thead",{},el("tr",{},el("th",{text:"Question"}),el("th",{text:"Average",style:"text-align:right"}))),el("tbody",{},
+      SCALES.map(([k,l])=>{const v=sv.map(s=>s.scores&&s.scores[k]).filter(n=>n);return el("tr",{},el("td",{text:l}),el("td",{class:"num",text:v.length?(v.reduce((a,b)=>a+b,0)/v.length).toFixed(1):"—"}))}),
+      [["info","Got responsible-travel information"],["local","Trip supported local people"],["wildlife","Nature treated respectfully"]].map(([k,l])=>{const y=sv.filter(s=>s.sustain&&s.sustain[k]).length;return el("tr",{},el("td",{text:l}),el("td",{class:"num",text:Math.round(y/sv.length*100)+"% yes"}))})));
+    sat.append(el("p",{class:"hint",text:sv.length+" response"+(sv.length>1?"s":"")+" · scores out of 10"}),tb);
+  }
+}
+function exportCsv(){
+  const cols=["ref","category","severity","status","reporterType","channel","anonymous","title","place","tour","occurredAt","receivedAt","acknowledgedAt","closedAt","owner","rootCause","findings","action","actionDue","actionDone","effective","responseSent"];
+  const iso=v=>typeof v==="number"&&v>1e11?new Date(v).toISOString():v;
+  const esc=v=>{v=v==null?"":String(iso(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const rows=cases.filter(c=>inPeriod(c.receivedAt)).map(c=>cols.map(k=>esc(k==="category"?(CAT[c[k]]||{name:c[k]}).name:c[k])).join(","));
+  const blob=new Blob(["﻿"+[cols.join(",")].concat(rows).join("\n")],{type:"text/csv;charset=utf-8"});
+  const a=el("a",{href:URL.createObjectURL(blob),download:"incident-register-"+new Date().toISOString().slice(0,10)+".csv"});
+  document.body.append(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+}
+
+// ---------- survey ----------
+function renderScales(){
+  const box=$("#scales");
+  SCALES.forEach(([k,l])=>{
+    const g=el("div",{class:"field",role:"radiogroup","aria-labelledby":"sl-"+k},el("span",{class:"lbl",id:"sl-"+k,text:l}));
+    const sc=el("div",{class:"scale"});
+    for(let i=1;i<=10;i++)sc.append(el("label",{},el("input",{type:"radio",name:"sc-"+k,id:"sc-"+k+"-"+i,value:i}),String(i)));
+    g.append(sc); box.append(g);
+  });
+}
+async function submitSurvey(e){
+  e.preventDefault(); const m=$("#surveyMsg");
+  const scores={}; SCALES.forEach(([k])=>{const v=document.querySelector('input[name="sc-'+k+'"]:checked');if(v)scores[k]=+v.value});
+  if(!scores.overall){m.textContent="Give an overall score to send your feedback.";return}
+  const p={tour:$("#s-tour").value.trim(),travel_date:$("#s-date").value||null,scores,sustain:{info:$("#s-info").checked,local:$("#s-local").checked,wildlife:$("#s-wildlife").checked},
+    comment:$("#s-comment").value.trim(),follow_up:$("#s-follow").checked,email:$("#s-follow").checked?$("#s-email").value.trim():""};
+  $("#surveyBtn").disabled=true; m.textContent="Sending…";
+  if(!demo){
+    const {error}=await sb.rpc("submit_survey",{p});
+    $("#surveyBtn").disabled=false;
+    if(error){m.textContent=errText(error);return}
+    if(staff)loadData();
+  } else {
+    const now=Date.now(); $("#surveyBtn").disabled=false;
+    surveys.unshift({id:"ls"+now,at:now,tour:p.tour,scores,sustain:p.sustain,comment:p.comment});
+    if(scores.overall<=6||(p.follow_up&&p.comment)){
+      cases.unshift({id:"local"+now,ref:makeRef(now),category:scores.overall<=6?"complaint":"compliment",severity:scores.overall<=4?"High":scores.overall<=6?"Medium":"Low",reporterType:"guest",channel:"Post-trip survey",
+        title:"Post-trip survey: overall "+scores.overall+"/10"+(p.tour?" ("+p.tour+")":""),description:p.comment||"Low score with no comment.",tour:p.tour,occurredAt:now,receivedAt:now,status:"New",anonymous:!p.email,
+        contact:p.email?{email:p.email,consent:true}:{},extras:{},log:[{at:now,note:"Opened automatically from a post-trip survey"}]});
+    }
+    renderAll();
+  }
+  $("#surveyForm").reset(); prefill(); m.textContent="Thank you. Your feedback is recorded."; toast("Feedback recorded");
+}
+
+// ---------- staff sign-in ----------
+let siEmail="";
+async function sendLink(e){
+  e.preventDefault(); const m=$("#siMsg"); siEmail=$("#si-email").value.trim();
+  if(!siEmail||!$("#si-email").checkValidity()){m.textContent="Enter your work email.";return}
+  if(demo){m.textContent="Demo mode: sign-in isn't connected yet. Staff tabs are already open.";return}
+  $("#si-send").disabled=true; m.textContent="Sending…";
+  const {error}=await sb.auth.signInWithOtp({email:siEmail,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});
+  $("#si-send").disabled=false;
+  if(error){m.textContent=/signups not allowed|not found|otp_disabled/i.test(error.message)?"This email isn't on the staff list. Ask the sustainability coordinator to add you.":errText(error);return}
+  m.textContent="Check your inbox for an email from the register."; $("#signinForm").hidden=true; $("#codeForm").hidden=false; $("#si-code").focus();
+}
+async function verifyCode(e){
+  e.preventDefault(); const m=$("#siMsg"), token=$("#si-code").value.replace(/\s/g,"");
+  if(!token){m.textContent="Type the code from the email.";return}
+  m.textContent="Checking…";
+  const {error}=await sb.auth.verifyOtp({email:siEmail,token,type:"email"});
+  m.textContent=error?"That code didn't work. It may have expired; send a new one.":"";
+}
+async function handleSession(session){
+  if(!session){staff=null;cases=[];surveys=[];counts=null;applyStaffUI();return}
+  const {data,error}=await sb.from("staff").select("full_name,roles,active").eq("user_id",session.user.id).maybeSingle();
+  if(error||!data||!data.active){
+    staff=null; applyStaffUI(); show("signin");
+    $("#siMsg").textContent="You're signed in as "+session.user.email+", but that email isn't on the active staff list. Ask the sustainability coordinator.";
+    $("#signout").hidden=false; return;
+  }
+  staff=data; applyStaffUI();
+  if(location.hash.slice(1)==="signin"||hadAuthHash||!location.hash)show("register");
+  await loadData();
+  clearInterval(refreshTimer); refreshTimer=setInterval(()=>{if(!document.hidden)loadData()},60000);
+}
+function applyStaffUI(){
+  const on=isStaffUI();
+  document.querySelectorAll("[data-staff]").forEach(n=>n.hidden=!on);
+  $("#tab-signin").hidden=on;
+  $("#signout").hidden=demo||!staff;
+  $("#channelField").hidden=!staff;
+  $("#logBtn").hidden=!staff;
+  const m=$("#mode");
+  if(demo){m.hidden=false;m.innerHTML="<strong>Demo mode.</strong> Not connected to the database yet: example cases are shown and anything you add disappears on reload.";}
+  else if(staff){m.hidden=false;m.textContent="";m.append(el("strong",{text:"Signed in as "+staff.full_name+"."})," Roles: "+(staff.roles&&staff.roles.length?staff.roles.join(", "):"staff")+".");}
+  else m.hidden=true;
+  if(!on&&STAFF_VIEWS.includes(location.hash.slice(1)))show("signin");
+}
+
+// ---------- views ----------
+const VIEWS=["report","survey","signin","register","dashboard"];
+function show(v){
+  if(!VIEWS.includes(v))v="report";
+  if(STAFF_VIEWS.includes(v)&&!isStaffUI())v="signin";
+  if(v==="signin"&&isStaffUI()&&!demo)v="register";
+  VIEWS.forEach(x=>{$("#view-"+x).hidden=x!==v;const t=$("#tab-"+x);if(t)t.setAttribute("aria-selected",x===v)});
+  if(location.hash.slice(1)!==v)history.replaceState(null,"",location.pathname+location.search+"#"+v);
+  if(v==="dashboard")renderDash();
+}
+function renderAll(){renderList();renderSheet();if(!$("#view-dashboard").hidden)renderDash()}
+function prefill(){
+  const tour=qs.get("tour")||qs.get("booking"); if(tour){$("#f-tour").value=tour;$("#s-tour").value=tour}
+  const d=qs.get("date"); if(d&&/^\d{4}-\d{2}-\d{2}$/.test(d))$("#s-date").value=d;
+}
+
+// ---------- boot ----------
+function boot(){
+  $("#helpnum").textContent=CONFIG.helpNumber; $("#helpnum").href="tel:"+CONFIG.helpTel;
+  CATS.forEach(c=>$("#fCat").append(el("option",{value:c.id,text:c.name})));
+  STATUSES.forEach(s=>$("#fStatus").append(el("option",{value:s,text:s})));
+  renderScales();
+  role=qs.get("as")==="staff"?"staff":"guest"; setRole(role); prefill();
+  document.querySelectorAll("nav.tabs button[data-view]").forEach(b=>b.addEventListener("click",()=>show(b.dataset.view)));
+  document.querySelectorAll(".who button").forEach(b=>b.addEventListener("click",()=>setRole(b.dataset.role)));
+  $("#cats").addEventListener("change",onCat); $("#c-anon").addEventListener("change",onAnon);
+  $("#reportForm").addEventListener("submit",submitReport); $("#surveyForm").addEventListener("submit",submitSurvey);
+  $("#signinForm").addEventListener("submit",sendLink); $("#codeForm").addEventListener("submit",verifyCode);
+  $("#si-back").addEventListener("click",()=>{$("#codeForm").hidden=true;$("#signinForm").hidden=false;$("#siMsg").textContent=""});
+  $("#another").addEventListener("click",()=>{$("#doneBox").hidden=true;$("#reportForm").hidden=false;$("#f-title").focus()});
+  ["#q","#fCat","#fStatus","#fSev"].forEach(s=>$(s).addEventListener("input",renderList));
+  $("#period").addEventListener("change",()=>{demo?renderDash():loadData()}); $("#exportBtn").addEventListener("click",exportCsv);
+  $("#refreshBtn").addEventListener("click",()=>{demo?renderAll():loadData().then(()=>toast("Register refreshed"))});
+  $("#logBtn").addEventListener("click",()=>{setRole("staff");show("report");$("#f-channel").value="Phone";$("#f-title").focus()});
+  $("#signout").addEventListener("click",async()=>{await sb.auth.signOut();clearInterval(refreshTimer);show("report");toast("Signed out")});
+  window.addEventListener("hashchange",()=>{if(!/access_token=/.test(location.hash))show(location.hash.slice(1))});
+
+  if(demo){
+    cases=examples(); surveys=exampleSurveys(); selected=cases[0].id;
+    applyStaffUI(); renderAll(); show(location.hash.slice(1)||"report"); return;
+  }
+  sb=window.supabase.createClient(CONFIG.supabaseUrl,CONFIG.supabaseKey,{auth:{flowType:"implicit",detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});
+  applyStaffUI();
+  if(hadAuthHash){
+    const err=new URLSearchParams(location.hash.slice(1)).get("error_description");
+    show("signin"); if(err)$("#siMsg").textContent="The sign-in link didn't work ("+err+"). Send a new one.";
+  } else show(location.hash.slice(1)||"report");
+  sb.auth.onAuthStateChange((_ev,session)=>{setTimeout(()=>handleSession(session),0)});
+}
+boot();
+})();
+</script>
+</body>
+</html>
