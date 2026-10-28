@@ -483,6 +483,21 @@ const CATS = [
   {id:"ethics", name:"Ethics or whistleblowing", desc:"Bribery, fraud, breaking the law or our code", sev:"High", ack:5, resolve:30, crit:"1.29", who:"both", restricted:true}
 ];
 const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
+// WhatsApp "help" button: the chat opens with a starter message that matches what the person ticked.
+// Until they actively pick a category the message stays general (Complaint is only ticked by default).
+// Confidential categories never name the topic in WhatsApp.
+const WA_MSG = {
+  general:     "Hi Experiences Caribbean, I need help with my tour.",
+  generalStaff:"Hi, I'm with the Experiences Caribbean team and need help on a tour.",
+  complaint:   "Hi Experiences Caribbean, I have a problem with my tour that I'd like to raise.",
+  compliment:  "Hi Experiences Caribbean, I'd like to share a compliment or suggestion about my tour.",
+  injury:      "Hi Experiences Caribbean, someone has been hurt or is unwell on our tour. Please contact me as soon as possible.",
+  nearmiss:    "Hi Experiences Caribbean, I want to report a safety hazard on our tour.",
+  emergency:   "URGENT: there is an emergency on our tour. Please call me now.",
+  supplier:    "Hi Experiences Caribbean, I have a concern about a supplier, wildlife or the environment on our tour.",
+  private:     "Hi Experiences Caribbean, I'd like to speak to someone privately about a concern."
+};
+let catChosen = false;
 const STATUSES = ["New","Acknowledged","Investigating","Action in progress","Closed"];
 const CAUSES = ["People (training, conduct)","Process or procedure","Supplier","Equipment or vehicle","Weather or environment","Guest behaviour","Information given to guest","Not yet known"];
 const SCALES = [["overall","Overall trip"],["guide","Guide or tour leader"],["transport","Transport and safety"],["accommodation","Accommodation"],["value","Value for money"]];
@@ -552,11 +567,18 @@ function onCat(){
   $("#xInjury").hidden=c.x!=="injury";
   $("#xSupplier").hidden=c.x!=="supplier";
   $("#emergencyNote").hidden=c.id!=="emergency";
+  updateWa();
   const note=$("#restrictedNote");
   if(c.restricted){note.hidden=false;note.textContent=c.id==="safeguarding"
     ? "This goes only to our safeguarding lead. If a child is in immediate danger, call 911 first. You can report anonymously."
     : "This goes only to the designated manager, never to anyone named in your report. You can report anonymously and no one will face negative consequences for reporting in good faith.";}
   else note.hidden=true;
+}
+function updateWa(){
+  const c=currentCat(), tour=$("#f-tour").value.trim();
+  let msg = !catChosen ? (role==="staff"?WA_MSG.generalStaff:WA_MSG.general) : c.restricted ? WA_MSG.private : (WA_MSG[c.id]||WA_MSG.general);
+  if(tour && !(catChosen && c.restricted)) msg += " Tour/booking: "+tour+".";
+  $("#helpwa").href="https://wa.me/"+CONFIG.helpTel.replace(/\D/g,"")+"?text="+encodeURIComponent(msg);
 }
 function setRole(r){role=r;$("#role-guest").setAttribute("aria-pressed",r==="guest");$("#role-staff").setAttribute("aria-pressed",r==="staff");renderCats()}
 function onAnon(){const a=$("#c-anon").checked;["#c-name","#c-email","#c-phone"].forEach(s=>{$(s).disabled=a;if(a)$(s).value=""});$("#c-consent").disabled=a}
@@ -866,7 +888,7 @@ function boot(){
   CATS.forEach(c=>$("#fCat").append(el("option",{value:c.id,text:c.name})));
   STATUSES.forEach(s=>$("#fStatus").append(el("option",{value:s,text:s})));
   renderScales();
-  role=qs.get("as")==="staff"?"staff":"guest"; setRole(role); prefill();
+  role=qs.get("as")==="staff"?"staff":"guest"; setRole(role); prefill(); updateWa();
   // Menu: switch section. Tapping the section you are already on does nothing,
   // except "Cases" while a case is open on a phone, which goes back to the list.
   document.querySelectorAll("nav.tabs button[data-view], .bottomnav button[data-view]").forEach(b=>b.addEventListener("click",()=>{
@@ -875,7 +897,7 @@ function boot(){
     show(v);window.scrollTo(0,0);
   }));
   document.querySelectorAll(".who button").forEach(b=>b.addEventListener("click",()=>setRole(b.dataset.role)));
-  $("#cats").addEventListener("change",onCat); $("#c-anon").addEventListener("change",onAnon);
+  $("#cats").addEventListener("change",()=>{catChosen=true;onCat()}); $("#cats").addEventListener("click",e=>{if(e.target.name==="cat"&&!catChosen){catChosen=true;updateWa()}}); $("#f-tour").addEventListener("input",updateWa); $("#c-anon").addEventListener("change",onAnon);
   $("#reportForm").addEventListener("submit",submitReport); $("#surveyForm").addEventListener("submit",submitSurvey);
   $("#signinForm").addEventListener("submit",sendLink); $("#codeForm").addEventListener("submit",verifyCode);
   $("#si-back").addEventListener("click",()=>{$("#codeForm").hidden=true;$("#signinForm").hidden=false;$("#siMsg").textContent=""});
