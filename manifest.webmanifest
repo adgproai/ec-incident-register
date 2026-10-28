@@ -6,8 +6,8 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f6f4ee",
-  "theme_color": "#24312c",
+  "background_color": "#f4f0db",
+  "theme_color": "#2b2b2b",
   "icons": [
     {
       "src": "https://experiencescaribbean.com/wp-content/uploads/2025/08/86d9f8a6-a0be-42c7-b586-296c2a6424b8-all-color-logos-12-600x600.png",
