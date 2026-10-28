@@ -7,56 +7,53 @@
 <title>Feedback &amp; Incident Reports · Experiences Caribbean</title>
 <meta name="description" content="Tell Experiences Caribbean about a complaint, compliment, accident, near miss or concern on one of our tours.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rosario:wght@400;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
-  --bg:#f3f6f5; --surface:#ffffff; --sunk:#e8eeec; --ink:#10221f; --muted:#5b6e6a; --line:#cfdbd8;
-  --accent:#0b6e66; --accent-ink:#ffffff; --accent-soft:#d5ece9;
+  /* Experiences Caribbean brand: dark header, teal footer (#04869D), orange accent (#FF8000), Rosario type, black buttons */
+  --bg:#f6f4ee; --surface:#ffffff; --sunk:#eef0ea; --ink:#2b2723; --muted:#6b645c; --line:#dcd8cf;
+  --header:#24312c; --header-ink:#ffffff; --footer:#04869d; --footer-ink:#ffffff; --orange:#ff8000; --orange-ink:#b35a00;
+  --accent:#04869d; --accent-ink:#ffffff; --accent-soft:#dcf0f3; --btn:#111111; --btn-ink:#ffffff;
   --crit:#b42318; --crit-soft:#fbe4e1; --high:#b54708; --high-soft:#fcebd8; --med:#8a6d00; --med-soft:#f6efcc; --low:#2f6f3e; --low-soft:#dcefe0;
   --restricted:#5b3fa3; --restricted-soft:#e9e3f7;
-  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
-  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-display:"Rosario", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Rosario", "Segoe UI", system-ui, sans-serif;
   --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   color-scheme:light;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0d1716; --surface:#14211f; --sunk:#1b2b29; --ink:#e3eeeb; --muted:#93a8a3; --line:#2a3d3a;
-  --accent:#4fc2b6; --accent-ink:#06201d; --accent-soft:#183d39;
-  --crit:#ff8a7f; --crit-soft:#3d1d1a; --high:#f5a65b; --high-soft:#3a2714; --med:#e3c454; --med-soft:#332c10; --low:#7fd093; --low-soft:#16301c;
-  --restricted:#b9a3f0; --restricted-soft:#2a2240; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0d1716; --surface:#14211f; --sunk:#1b2b29; --ink:#e3eeeb; --muted:#93a8a3; --line:#2a3d3a;
-  --accent:#4fc2b6; --accent-ink:#06201d; --accent-soft:#183d39;
-  --crit:#ff8a7f; --crit-soft:#3d1d1a; --high:#f5a65b; --high-soft:#3a2714; --med:#e3c454; --med-soft:#332c10; --low:#7fd093; --low-soft:#16301c;
-  --restricted:#b9a3f0; --restricted-soft:#2a2240; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 .check.field{flex-direction:row;align-items:flex-start;gap:8px}
 body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);margin:0}
 .wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-header.top{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+header.top{position:sticky;top:0;z-index:5;background:var(--header);color:var(--header-ink);border-bottom:3px solid var(--orange);padding-top:env(safe-area-inset-top,0px)}
 .bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;padding-block:12px}
-.brand{display:flex;flex-direction:column;min-width:0;color:inherit;text-decoration:none}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;color:inherit;text-decoration:none}
+.brand img{width:52px;height:52px;border-radius:50%;flex:none;display:block}
+.brand .words{display:flex;flex-direction:column;min-width:0}
 .brand b{font:700 19px/1.15 var(--f-display);letter-spacing:-.01em}
-.brand span{font-size:12.5px;color:var(--muted)}
+.brand .words span{font-size:12.5px;color:rgba(255,255,255,.75)}
 nav.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto;align-items:center}
-nav.tabs button{font:600 14px var(--f-body);border:1px solid transparent;background:none;color:var(--muted);padding:7px 12px;border-radius:999px;cursor:pointer}
-nav.tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--ink);border-color:var(--accent)}
-nav.tabs button:hover{color:var(--ink)}
-nav.tabs .sep{width:1px;height:22px;background:var(--line);margin-inline:4px}
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.mode{font-size:12.5px;color:var(--muted);padding-block:6px;border-top:1px dashed var(--line)}
-.mode strong{color:var(--ink)}
-main{padding-block:24px 48px}
+nav.tabs button{font:600 14px var(--f-body);border:1px solid transparent;background:none;color:rgba(255,255,255,.8);padding:7px 12px;border-radius:999px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--orange);color:#fff;border-color:var(--orange)}
+nav.tabs button:hover{color:#fff}
+nav.tabs #signout{color:#fff;border-color:rgba(255,255,255,.4)}
+nav.tabs .sep{width:1px;height:22px;background:rgba(255,255,255,.3);margin-inline:4px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.mode{font-size:12.5px;color:rgba(255,255,255,.75);padding-block:6px;border-top:1px dashed rgba(255,255,255,.25)}
+.mode strong{color:#fff}
+main{padding-block:28px 24px}
 h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
-h1{font-size:28px;font-weight:700} h2{font-size:20px;font-weight:700} h3{font-size:16px;font-weight:700}
+h1{font-size:30px;font-weight:700}
+h1::after{content:"";display:block;width:56px;height:3px;background:var(--orange);margin-top:10px} h2{font-size:20px;font-weight:700} h3{font-size:16px;font-weight:700}
 .lede{color:var(--muted);max-width:62ch;margin:6px 0 0}
 .sos{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-block:16px}
 @media (max-width:720px){.sos{grid-template-columns:minmax(0,1fr)}}
 .sos > div{border-radius:10px;padding:12px 16px;display:flex;flex-direction:column;gap:2px}
 .sos .help{background:var(--accent-soft);border:1px solid var(--accent)}
 .sos .em{background:var(--crit-soft);border:1px solid var(--crit)}
+.sos > div{border-radius:6px}
 .sos b{font-family:var(--f-display);font-size:15.5px}
 .sos .em b{color:var(--crit)}
 .sos a.num{font:600 18px var(--f-mono);color:var(--ink);text-decoration:none}
@@ -72,26 +69,29 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
 input:disabled{background:var(--sunk);color:var(--muted)}
 textarea{min-height:96px;resize:vertical}
 fieldset{border:1px solid var(--line);border-radius:12px;padding:16px;margin:0;min-width:0}
-legend{font:700 13px var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0 6px}
+legend{font:700 13px var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--orange-ink);padding:0 6px}
 .who{display:flex;gap:8px;flex-wrap:wrap;margin-block:6px}
-.who button{font:600 14px var(--f-body);padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
-.who button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.who button{font:600 14px var(--f-body);padding:9px 14px;border-radius:3px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.who button[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:#fff}
 .cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
-.cat{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;background:var(--surface)}
+.cat{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:6px;padding:10px 12px;cursor:pointer;background:var(--surface)}
 .cat input{margin-top:4px}
-.cat:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.cat:has(input:checked){border-color:var(--orange);background:#fff3e6}
+.cat input,.check input{accent-color:var(--orange)}
 .cat b{display:block;font-size:14px}
 .cat span{display:block;font-size:12.5px;color:var(--muted)}
 .check{display:flex;gap:8px;align-items:flex-start;font-weight:400;font-size:14px}
 .check input{margin-top:4px}
-.btn{font:700 14.5px var(--f-body);background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:11px 18px;cursor:pointer}
-.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
-.btn.small{padding:6px 11px;font-size:13px;border-radius:8px}
+.btn{font:700 14.5px var(--f-body);background:var(--btn);color:var(--btn-ink);border:0;border-radius:3px;padding:11px 20px;cursor:pointer;letter-spacing:.01em}
+.btn:hover{background:#000}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--ink)}
+.btn.ghost:hover{background:var(--sunk)}
+.btn.small{padding:6px 12px;font-size:13px;border-radius:3px}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .notice{border-left:3px solid var(--restricted);background:var(--restricted-soft);padding:10px 14px;border-radius:0 8px 8px 0;font-size:14px}
 .warnbox{border-left:3px solid var(--crit);background:var(--crit-soft);padding:10px 14px;border-radius:0 8px 8px 0;font-size:14px}
-.done{border:1px solid var(--accent);background:var(--accent-soft);border-radius:12px;padding:18px}
+.done{border:1px solid var(--accent);border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:6px;padding:18px}
 .ref{font:600 14px var(--f-mono);letter-spacing:.02em}
 .stack{display:flex;flex-direction:column;gap:16px}
 .narrow{max-width:460px}
@@ -148,11 +148,14 @@ table.t td.num{font-variant-numeric:tabular-nums;font-family:var(--f-mono);text-
 .scale{display:flex;gap:4px;flex-wrap:wrap}
 .scale label{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid var(--line);border-radius:8px;cursor:pointer;font-family:var(--f-mono);font-weight:600}
 .scale input{position:absolute;opacity:0;width:1px;height:1px}
-.scale label:has(input:checked){background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.scale label:has(input:checked){background:var(--orange);color:#fff;border-color:var(--orange)}
 .scale label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:700;z-index:20;max-width:calc(100% - 32px)}
-footer.site{border-top:1px solid var(--line);padding-block:20px 32px;font-size:13px;color:var(--muted)}
-footer.site a{color:inherit}
+footer.site{background:var(--footer);color:var(--footer-ink);padding-block:24px 32px;font-size:13.5px;margin-top:24px}
+footer.site a{color:#fff}
+footer.site a:hover{color:var(--orange)}
+footer.site .row{justify-content:space-between;gap:16px}
+footer.site img{width:44px;height:44px;border-radius:50%}
 @media (prefers-reduced-motion:no-preference){.item,.btn,.cat{transition:background-color .15s,border-color .15s}}
 </style>
 </head>
@@ -161,7 +164,7 @@ footer.site a{color:inherit}
 <header class="top">
   <div class="wrap">
     <div class="bar">
-      <a class="brand" href="https://experiencescaribbean.com/"><b>Experiences Caribbean</b><span>Feedback, complaints and incident reports</span></a>
+      <a class="brand" href="https://experiencescaribbean.com/"><img src="https://experiencescaribbean.com/wp-content/uploads/2025/08/86d9f8a6-a0be-42c7-b586-296c2a6424b8-all-color-logos-12-600x600.png" alt="Experiences Caribbean logo" width="52" height="52"><span class="words"><b>Experiences Caribbean</b><span>Feedback, complaints and incident reports</span></span></a>
       <nav class="tabs" role="tablist" aria-label="Sections">
         <button role="tab" id="tab-report" aria-selected="true" data-view="report">Report</button>
         <button role="tab" id="tab-survey" aria-selected="false" data-view="survey">Trip survey</button>
@@ -185,7 +188,7 @@ footer.site a{color:inherit}
     <p class="lede">Use this form for complaints, compliments, accidents, near misses and any concern about safety, people or wildlife on our tours. Every report gets a reference number and a named person who follows it up.</p>
   </div>
   <div class="sos" role="note">
-    <div class="em"><b>Life-threatening emergency?</b><span>Call the emergency services first</span><a class="num" href="tel:999">999</a><span class="hint">Police, fire and ambulance in Dominica</span></div>
+    <div class="em"><b>Life-threatening emergency?</b><span>Call the emergency services first</span><a class="num" href="tel:911">911</a><span class="hint">Police, fire and ambulance in Dominica</span></div>
     <div class="help"><b>Need help during your tour?</b><span>Call or WhatsApp us, then tell your guide</span><a class="num" id="helpnum" href="tel:+17676165827">+1 (767) 616-5827</a><span class="hint">Answered during tour operating hours</span></div>
   </div>
 
@@ -346,10 +349,9 @@ footer.site a{color:inherit}
 </main>
 
 <footer class="site">
-  <div class="wrap">
-    Jungle Trekking Adventures and Safari Inc. trading as Experiences Caribbean ·
-    Your details are used only to handle your report. See our <a href="https://experiencescaribbean.com/our-policies/">policies and privacy notice</a> ·
-    <a href="https://experiencescaribbean.com/">Back to experiencescaribbean.com</a>
+  <div class="wrap row">
+    <div class="row" style="flex-wrap:nowrap;align-items:center"><img src="https://experiencescaribbean.com/wp-content/uploads/2025/08/86d9f8a6-a0be-42c7-b586-296c2a6424b8-all-color-logos-12-600x600.png" alt="" width="44" height="44"><span>Jungle Trekking Adventures and Safari Inc. · © 2026 Experiences Caribbean<br>Your details are used only to handle your report.</span></div>
+    <div><a href="https://experiencescaribbean.com/our-policies/">Policies &amp; privacy</a> · <a href="https://experiencescaribbean.com/codes-of-conduct/">Codes of Conduct</a> · <a href="https://experiencescaribbean.com/">experiencescaribbean.com</a></div>
   </div>
 </footer>
 <div class="toast" id="toast" hidden role="status"></div>
@@ -451,7 +453,7 @@ function onCat(){
   $("#emergencyNote").hidden=c.id!=="emergency";
   const note=$("#restrictedNote");
   if(c.restricted){note.hidden=false;note.textContent=c.id==="safeguarding"
-    ? "This goes only to our safeguarding lead. If a child is in immediate danger, call 999 first. You can report anonymously."
+    ? "This goes only to our safeguarding lead. If a child is in immediate danger, call 911 first. You can report anonymously."
     : "This goes only to the designated manager, never to anyone named in your report. You can report anonymously and no one will face negative consequences for reporting in good faith.";}
   else note.hidden=true;
 }
