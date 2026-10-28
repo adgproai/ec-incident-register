@@ -108,6 +108,21 @@ legend{font:700 13px var(--f-body);text-transform:uppercase;letter-spacing:.06em
 .done{border:1px solid var(--accent);border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:6px;padding:18px}
 .ref{font:600 14px var(--f-mono);letter-spacing:.02em}
 .waalert{border-top:1px solid var(--line);margin:4px 0 14px;padding-top:12px}
+.whonote{margin:-2px 0 4px;font-size:13.5px;color:var(--muted)}
+.whonote strong{color:var(--ink)}
+.whonote .linkbtn{color:var(--accent);padding:0;font-weight:700}
+.members{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.member{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.member:last-child{border-bottom:0}
+.member.off{background:var(--sunk);color:var(--muted)}
+.member .who2{flex:1 1 220px;min-width:0}
+.member .who2 b{display:block}
+.member .who2 span{display:block;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.member .tags{display:flex;gap:4px;flex-wrap:wrap}
+.member .acts{display:flex;gap:6px;margin-left:auto}
+.pill.role{background:var(--accent-soft);color:#035e6e}
+.pill.off{background:var(--line);color:var(--ink)}
+.roleopts{display:flex;flex-direction:column;gap:6px}
 .waalert p{margin:0 0 10px}
 .wabtn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:3px;background:#25d366;color:#08301a;font:700 15px var(--f-body);text-decoration:none}
 @media (max-width:767px){.wabtn{display:flex;min-height:52px}}
@@ -269,6 +284,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
         <span class="sep" data-staff hidden></span>
         <button role="tab" id="tab-register" aria-selected="false" data-view="register" data-staff hidden>Case register</button>
         <button role="tab" id="tab-dashboard" aria-selected="false" data-view="dashboard" data-staff hidden>Dashboard</button>
+        <button role="tab" id="tab-team" aria-selected="false" data-view="team" data-admin hidden>Team</button>
         <button role="tab" id="tab-signin" aria-selected="false" data-view="signin">Staff sign in</button>
         <button type="button" id="signout" class="btn ghost small" hidden>Sign out</button>
       </nav>
@@ -295,6 +311,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
     <button type="button" aria-pressed="true" data-role="guest" id="role-guest">I'm a guest or visitor</button>
     <button type="button" aria-pressed="false" data-role="staff" id="role-staff">I'm staff, a guide or driver</button>
   </div>
+  <p class="whonote" id="whoNote" hidden></p>
 
     <fieldset>
       <legend>What is this about?</legend>
@@ -448,6 +465,29 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
     <div class="panel"><h3>Post-trip satisfaction</h3><div id="sat"></div></div>
   </div>
 </section>
+
+<!-- TEAM (admins only) -->
+<section id="view-team" class="stack" hidden>
+  <div><h1>Team</h1>
+  <p class="lede">Everyone who can sign in to the case register. Each person signs in with their own work email, so the reports they file and the cases they update carry their name. People are never deleted, so their past reports keep their name: switch them off when they leave.</p></div>
+  <form id="teamForm" class="panel stack" novalidate>
+    <h2 id="tmTitle">Add a team member</h2>
+    <div class="grid2">
+      <div class="field"><label for="tm-name">Full name</label><input type="text" id="tm-name" maxlength="200" autocomplete="off"></div>
+      <div class="field"><label for="tm-email">Work email</label><input type="email" id="tm-email" maxlength="200" autocomplete="off" placeholder="name@experiencescaribbean.com"></div>
+    </div>
+    <fieldset><legend>Extra access</legend>
+      <p class="hint" style="margin:0 0 8px">Everyone on the team can read and update every case except confidential ones. Tick to add more.</p>
+      <div class="roleopts">
+        <label class="check"><input type="checkbox" id="tm-admin"> <span><b>Admin</b> <span class="hint">— adds people, changes their access, switches them off</span></span></label>
+        <label class="check"><input type="checkbox" id="tm-safe"> <span><b>Safeguarding lead</b> <span class="hint">— sees child protection reports</span></span></label>
+        <label class="check"><input type="checkbox" id="tm-hr"> <span><b>HR and ethics</b> <span class="hint">— sees staff grievance and whistleblowing reports</span></span></label>
+      </div>
+    </fieldset>
+    <div class="row"><button class="btn" type="submit" id="tm-save">Add to team</button><button class="btn ghost small" type="button" id="tm-cancel" hidden>Cancel</button><span class="hint" id="tmMsg" role="status"></span></div>
+  </form>
+  <div class="members" id="teamList" aria-label="Team members"><div class="empty">Loading…</div></div>
+</section>
 </main>
 
 <footer class="site">
@@ -461,6 +501,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
   <button type="button" data-view="survey"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1Z"/></svg><span>Survey</span></button>
   <button type="button" data-view="register" data-staff hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Cases</span></button>
   <button type="button" data-view="dashboard" data-staff hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Dashboard</span></button>
+  <button type="button" data-view="team" data-admin hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18.5 14.5a6.5 6.5 0 0 1 3 5.5"/></svg><span>Team</span></button>
   <button type="button" data-view="signin" id="bn-signin"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Staff</span></button>
 </nav>
 <div class="toast" id="toast" hidden role="status"></div>
@@ -511,7 +552,8 @@ const CAUSES = ["People (training, conduct)","Process or procedure","Supplier","
 const SCALES = [["overall","Overall trip"],["guide","Guide or tour leader"],["transport","Transport and safety"],["accommodation","Accommodation"],["value","Value for money"]];
 const SEV_ORDER = {Critical:0,High:1,Medium:2,Low:3};
 const DAY = 864e5;
-const STAFF_VIEWS = ["register","dashboard"];
+const STAFF_VIEWS = ["register","dashboard","team"];
+const ROLE_LABEL = {admin:"Admin",safeguarding:"Safeguarding lead",hr:"HR and ethics",coordinator:"Coordinator",manager:"Manager"};
 
 // ---------- state ----------
 const demo = !CONFIG.supabaseUrl || !CONFIG.supabaseKey || !window.supabase;
@@ -532,13 +574,14 @@ function dueFor(c){const cat=CAT[c.category]||CAT.complaint;return c.receivedAt+
 function isOverdue(c){return c.status!=="Closed" && Date.now()>dueFor(c)}
 function errText(e){const m=(e&&(e.message||e.error_description))||"";return m.replace(/^.*?ERROR:\s*/,"")||"Something went wrong. Try again."}
 function isStaffUI(){return demo || !!staff}
+function isAdmin(){return demo || !!(staff&&(staff.roles||[]).includes("admin"))}
 
 // ---------- database rows <-> page objects ----------
 function fromRow(r){
   return {id:r.id, ref:r.ref, category:r.category, severity:r.severity, status:r.status, reporterType:r.reporter_type, channel:r.channel,
     anonymous:r.anonymous, restricted:r.restricted, title:r.title, description:r.description, place:r.place, tour:r.tour,
     occurredAt:ms(r.occurred_at), receivedAt:ms(r.received_at), acknowledgedAt:ms(r.acknowledged_at), closedAt:ms(r.closed_at),
-    contact:r.contact||{}, extras:r.extras||{}, owner:r.owner, rootCause:r.root_cause, findings:r.findings, action:r.action,
+    loggedByName:r.logged_by_name, contact:r.contact||{}, extras:r.extras||{}, owner:r.owner, rootCause:r.root_cause, findings:r.findings, action:r.action,
     actionDue:dayMs(r.action_due), actionDone:dayMs(r.action_done), effective:r.effective, responseSent:r.response_sent,
     log:(r.log||[]).map(l=>({at:ms(l.at), note:l.note, by:l.by}))};
 }
@@ -588,7 +631,16 @@ function updateWa(){
   if(tour && !(catChosen && c.restricted)) msg += " Tour/booking: "+tour+".";
   $("#helpwa").href="https://wa.me/"+CONFIG.helpTel.replace(/\D/g,"")+"?text="+encodeURIComponent(msg);
 }
-function setRole(r){role=r;$("#role-guest").setAttribute("aria-pressed",r==="guest");$("#role-staff").setAttribute("aria-pressed",r==="staff");renderCats()}
+function setRole(r){role=r;$("#role-guest").setAttribute("aria-pressed",r==="guest");$("#role-staff").setAttribute("aria-pressed",r==="staff");renderCats();updateWhoNote()}
+// Staff reports carry the name of whoever is signed in (unless they report anonymously).
+function updateWhoNote(){
+  const n=$("#whoNote"); if(!n)return;
+  if(role!=="staff"&&!staff){n.hidden=true;return}
+  n.hidden=false; n.replaceChildren();
+  if(staff) n.append("Filing as ",el("strong",{text:staff.full_name||"you"}),". Your name is saved with the report unless you choose to report anonymously.");
+  else if(!demo) n.append("Sign in first so your name is saved with this report. ",el("button",{type:"button",class:"linkbtn",onclick:()=>{show("signin");window.scrollTo(0,0)}},"Staff sign in"));
+  else n.hidden=true;
+}
 function onAnon(){const a=$("#c-anon").checked;["#c-name","#c-email","#c-phone"].forEach(s=>{$(s).disabled=a;if(a)$(s).value=""});$("#c-consent").disabled=a}
 
 async function submitReport(e){
@@ -701,6 +753,7 @@ function renderSheet(){
   const add=(k,v)=>{if(v===undefined||v===null||v==="")return;kv.append(el("dt",{text:k}),el("dd",{text:v}))};
   add("Category",cat.name+(cat.crit?"  (Travelife "+cat.crit+")":""));
   add("Reported by",(c.anonymous?"Anonymous ":"")+(c.reporterType==="staff"?"staff / guide":"guest / visitor")+" · "+(c.channel||""));
+  add("Filed by",c.loggedByName);
   add("Happened",fmt(c.occurredAt)); add("Received",fmt(c.receivedAt)); add("Due to close",fmtD(dueFor(c)));
   add("Where",c.place); add("Tour",c.tour);
   if(c.contact&&(c.contact.name||c.contact.email||c.contact.phone))add("Contact",[c.contact.name,c.contact.email,c.contact.phone,c.contact.lang].filter(Boolean).join(" · "));
@@ -847,9 +900,16 @@ async function sendLink(e){
   if(!siEmail||!$("#si-email").checkValidity()){m.textContent="Enter your work email.";return}
   if(demo){m.textContent="Demo mode: sign-in isn't connected yet. Staff tabs are already open.";return}
   $("#si-send").disabled=true; m.textContent="Sending…";
-  const {error}=await sb.auth.signInWithOtp({email:siEmail,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});
+  const ask=()=>sb.auth.signInWithOtp({email:siEmail,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});
+  const noAccount=err=>err&&/signups not allowed|not found|otp_disabled/i.test(err.message);
+  let {error}=await ask();
+  if(noAccount(error)){
+    // First sign-in for someone an admin added to the team: create their login, then ask again.
+    try{await fetch(CONFIG.supabaseUrl+"/functions/v1/staff-account",{method:"POST",headers:{"Content-Type":"application/json",apikey:CONFIG.supabaseKey,Authorization:"Bearer "+CONFIG.supabaseKey},body:JSON.stringify({email:siEmail})})}catch(_){}
+    ({error}=await ask());
+  }
   $("#si-send").disabled=false;
-  if(error){m.textContent=/signups not allowed|not found|otp_disabled/i.test(error.message)?"This email isn't on the staff list. Ask the sustainability coordinator to add you.":errText(error);return}
+  if(error){m.textContent=noAccount(error)?"This email isn't on the team list. Ask an admin to add you.":errText(error);return}
   m.textContent="Check your inbox for an email from the register."; $("#signinForm").hidden=true; $("#codeForm").hidden=false; $("#si-code").focus();
 }
 async function verifyCode(e){
@@ -864,7 +924,7 @@ async function handleSession(session){
   const {data,error}=await sb.from("staff").select("full_name,roles,active").eq("user_id",session.user.id).maybeSingle();
   if(error||!data||!data.active){
     staff=null; applyStaffUI(); show("signin");
-    $("#siMsg").textContent="You're signed in as "+session.user.email+", but that email isn't on the active staff list. Ask the sustainability coordinator.";
+    $("#siMsg").textContent="You're signed in as "+session.user.email+", but that email isn't on the active team list. Ask an admin.";
     $("#signout").hidden=false; return;
   }
   staff=data; applyStaffUI();
@@ -875,6 +935,8 @@ async function handleSession(session){
 function applyStaffUI(){
   const on=isStaffUI();
   document.querySelectorAll("[data-staff]").forEach(n=>n.hidden=!on);
+  document.querySelectorAll("[data-admin]").forEach(n=>n.hidden=!isAdmin());
+  updateWhoNote();
   $("#tab-signin").hidden=on; $("#bn-signin").hidden=on;
   $("#signout").hidden=demo||!staff;
   $("#channelField").hidden=!staff;
@@ -884,22 +946,93 @@ function applyStaffUI(){
   else if(staff){m.hidden=false;m.textContent="";m.append(el("strong",{text:"Signed in as "+staff.full_name+"."})," Roles: "+(staff.roles&&staff.roles.length?staff.roles.join(", "):"staff")+".",el("button",{type:"button",class:"linkbtn",onclick:signOut},"Sign out"));}
   else m.hidden=true;
   if(!on&&STAFF_VIEWS.includes(location.hash.slice(1)))show("signin");
+  else if(on&&!isAdmin()&&location.hash.slice(1)==="team")show("register");
 }
 
 // ---------- views ----------
 const phone=()=>window.matchMedia("(max-width:767px)").matches;
 async function signOut(){ if(sb) await sb.auth.signOut(); clearInterval(refreshTimer); show("report"); toast("Signed out"); }
-const VIEWS=["report","survey","signin","register","dashboard"];
+const VIEWS=["report","survey","signin","register","dashboard","team"];
 function show(v){
   if(!VIEWS.includes(v))v="report";
   if(STAFF_VIEWS.includes(v)&&!isStaffUI())v="signin";
   if(v==="signin"&&isStaffUI()&&!demo)v="register";
+  if(v==="team"&&!isAdmin())v=isStaffUI()?"register":"signin";
   VIEWS.forEach(x=>{$("#view-"+x).hidden=x!==v;const t=$("#tab-"+x);if(t)t.setAttribute("aria-selected",x===v)});
   document.querySelectorAll(".bottomnav [data-view]").forEach(b=>{if(b.dataset.view===v)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   $("#tab-report").hidden=v==="report"; // on the form itself the menu item is pointless, so it only shows elsewhere
   if(v!=="register")$("#reg").classList.remove("detail");
   if(location.hash.slice(1)!==v)history.replaceState(null,"",location.pathname+location.search+"#"+v);
   if(v==="dashboard")renderDash();
+  if(v==="team")renderTeam();
+}
+
+// ---------- team (admins) ----------
+let team=[], editing=null;
+const demoTeam=()=>[
+  {email:"michael@experiencescaribbean.com",full_name:"Michael Eugen",roles:["admin","coordinator","manager","safeguarding","hr"],active:true,has_login:true,last_sign_in:new Date().toISOString()},
+  {email:"guide@example.com",full_name:"Example Guide",roles:[],active:true,has_login:false,last_sign_in:null},
+  {email:"former@example.com",full_name:"Former Driver",roles:[],active:false,has_login:true,last_sign_in:"2026-09-02T10:00:00Z"}];
+async function renderTeam(){
+  const box=$("#teamList");
+  if(demo){ if(!team.length)team=demoTeam(); }
+  else {
+    const {data,error}=await sb.rpc("admin_list_staff");
+    if(error){box.replaceChildren(el("div",{class:"empty",text:errText(error)}));return}
+    team=data||[];
+  }
+  box.replaceChildren();
+  if(!team.length){box.append(el("div",{class:"empty",text:"Nobody on the team yet."}));return}
+  team.forEach(t=>{
+    const tags=el("div",{class:"tags"});
+    (t.roles||[]).filter(r=>["admin","safeguarding","hr"].includes(r)).forEach(r=>tags.append(el("span",{class:"pill role",text:ROLE_LABEL[r]})));
+    if(!t.active)tags.append(el("span",{class:"pill off",text:"Switched off"}));
+    else if(!t.has_login)tags.append(el("span",{class:"pill",text:"Not signed in yet"}));
+    const seen=t.last_sign_in?"Last signed in "+fmtD(ms(t.last_sign_in)):"";
+    box.append(el("div",{class:"member"+(t.active?"":" off")},
+      el("div",{class:"who2"},el("b",{text:t.full_name||t.email}),el("span",{text:t.email+(seen?" · "+seen:"")})),
+      tags,
+      el("div",{class:"acts"},
+        el("button",{type:"button",class:"btn ghost small",onclick:()=>editMember(t)},"Edit"),
+        el("button",{type:"button",class:"btn ghost small",onclick:()=>saveMember(t.email,t.full_name,t.roles||[],!t.active,t.active?"Switched off":"Switched back on")},t.active?"Switch off":"Switch on"))));
+  });
+}
+function editMember(t){
+  editing=t; $("#tmTitle").textContent="Edit "+(t.full_name||t.email);
+  $("#tm-name").value=t.full_name||""; $("#tm-email").value=t.email; $("#tm-email").disabled=true;
+  $("#tm-admin").checked=(t.roles||[]).includes("admin"); $("#tm-safe").checked=(t.roles||[]).includes("safeguarding"); $("#tm-hr").checked=(t.roles||[]).includes("hr");
+  $("#tm-save").textContent="Save changes"; $("#tm-cancel").hidden=false; $("#tmMsg").textContent="";
+  $("#teamForm").scrollIntoView({block:"start"}); $("#tm-name").focus();
+}
+function resetTeamForm(){
+  editing=null; $("#teamForm").reset(); $("#tm-email").disabled=false; $("#tmTitle").textContent="Add a team member";
+  $("#tm-save").textContent="Add to team"; $("#tm-cancel").hidden=true;
+}
+async function saveMember(email,name,roles,active,done){
+  const m=$("#tmMsg");
+  if(demo){
+    const i=team.findIndex(t=>t.email===email.toLowerCase());
+    const row={email:email.toLowerCase(),full_name:name,roles,active,has_login:i>=0?team[i].has_login:false,last_sign_in:i>=0?team[i].last_sign_in:null};
+    if(i>=0)team[i]=row;else team.unshift(row);
+  } else {
+    const {error}=await sb.rpc("admin_save_staff",{p_email:email,p_name:name,p_roles:roles,p_active:active});
+    if(error){m.textContent=errText(error);toast(errText(error));return false}
+  }
+  toast(done); await renderTeam(); return true;
+}
+async function submitTeam(e){
+  e.preventDefault(); const m=$("#tmMsg");
+  const name=$("#tm-name").value.trim(), email=(editing?editing.email:$("#tm-email").value.trim()).toLowerCase();
+  if(!name){m.textContent="Enter the person's full name.";$("#tm-name").focus();return}
+  if(!editing&&(!email||!$("#tm-email").checkValidity())){m.textContent="Enter a valid work email.";$("#tm-email").focus();return}
+  if(!editing&&team.some(t=>t.email===email)){m.textContent="That email is already on the team. Use Edit on their row.";return}
+  // keep any other roles they already have, then apply the three tick-boxes
+  const keep=(editing&&editing.roles||[]).filter(r=>!["admin","safeguarding","hr"].includes(r));
+  const roles=keep.concat($("#tm-admin").checked?["admin"]:[],$("#tm-safe").checked?["safeguarding"]:[],$("#tm-hr").checked?["hr"]:[]);
+  $("#tm-save").disabled=true; m.textContent="Saving…";
+  const ok=await saveMember(email,name,roles,editing?editing.active:true,editing?"Changes saved":name+" added to the team");
+  $("#tm-save").disabled=false;
+  if(ok){ m.textContent=editing?"":name+" can now sign in at reports.experiencescaribbean.com with "+email+" (Staff sign in)."; resetTeamForm(); }
 }
 function renderAll(){renderList();renderSheet();if(!$("#view-dashboard").hidden)renderDash()}
 function prefill(){
@@ -932,6 +1065,7 @@ function boot(){
   $("#refreshBtn").addEventListener("click",()=>{demo?renderAll():loadData().then(()=>toast("Register refreshed"))});
   $("#logBtn").addEventListener("click",()=>{setRole("staff");show("report");$("#f-channel").value="Phone";$("#f-title").focus()});
   $("#signout").addEventListener("click",signOut);
+  $("#teamForm").addEventListener("submit",submitTeam); $("#tm-cancel").addEventListener("click",()=>{resetTeamForm();$("#tmMsg").textContent=""});
   window.addEventListener("hashchange",()=>{if(!/access_token=/.test(location.hash))show(location.hash.slice(1))});
 
   if(demo){
