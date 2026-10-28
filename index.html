@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
+<meta name="theme-color" content="#24312c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EC Reports">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="https://experiencescaribbean.com/wp-content/uploads/2025/08/86d9f8a6-a0be-42c7-b586-296c2a6424b8-all-color-logos-12-600x600.png">
+<link rel="icon" href="https://experiencescaribbean.com/wp-content/uploads/2025/08/86d9f8a6-a0be-42c7-b586-296c2a6424b8-all-color-logos-12-600x600.png">
 <title>Feedback &amp; Incident Reports · Experiences Caribbean</title>
 <meta name="description" content="Tell Experiences Caribbean about a complaint, compliment, accident, near miss or concern on one of our tours.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -157,6 +165,86 @@ footer.site a:hover{color:var(--orange)}
 footer.site .row{justify-content:space-between;gap:16px}
 footer.site img{width:44px;height:44px;border-radius:50%}
 @media (prefers-reduced-motion:no-preference){.item,.btn,.cat{transition:background-color .15s,border-color .15s}}
+
+/* ===== Mobile-first: phones are the main device (guides, drivers, guests) ===== */
+input[type=text],input[type=email],input[type=tel],input[type=date],input[type=datetime-local],select,textarea{font-size:16px} /* 16px stops iOS zooming into fields */
+.sos .wa{display:inline-flex;align-items:center;justify-content:center;margin-top:8px;min-height:44px;padding:0 16px;border-radius:3px;background:#25d366;color:#08301a;font-weight:700;text-decoration:none;align-self:flex-start}
+.sos .cta{display:none}
+.bottomnav{display:none}
+.sheet .back{display:none}
+.linkbtn{background:none;border:0;color:inherit;text-decoration:underline;font:inherit;cursor:pointer;padding:0 0 0 8px}
+@media (max-width:767px){
+  body{font-size:16px;padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))}
+  header.top{position:sticky}
+  .bar{padding-block:8px;gap:8px}
+  .brand img{width:40px;height:40px}
+  .brand b{font-size:17px}
+  .brand .words span{font-size:12px}
+  nav.tabs{display:none}
+  .mode{font-size:12px;padding-block:5px}
+  main{padding-block:16px 12px}
+  h1{font-size:25px} h1::after{margin-top:8px}
+  .lede{font-size:15px}
+  /* one-tap call buttons */
+  .sos{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-block:12px}
+  .sos > div{padding:10px;gap:4px}
+  .sos b{font-size:14px;line-height:1.25}
+  .sos > div > span:not(.hint){display:none}
+  .sos .hint{font-size:11.5px;order:9}
+  .sos a.num{display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:3px;font:700 16px var(--f-body);text-align:center}
+  .sos .em a.num{background:var(--crit);color:#fff}
+  .sos .help a.num{background:var(--accent);color:#fff;font-size:14px}
+  .sos .cta{display:inline}
+  .sos .wa{align-self:stretch;margin-top:0;font-size:14px}
+  /* choices and fields */
+  .who{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .who button{min-height:48px;padding:8px;font-size:14px;line-height:1.2}
+  fieldset{padding:14px 12px;border-radius:8px}
+  .cats{grid-template-columns:minmax(0,1fr);gap:6px}
+  .cat{padding:11px 12px;min-height:52px;align-items:center}
+  .cat input{margin-top:0;width:20px;height:20px;flex:none}
+  .cat b{font-size:15px}
+  .cat span{font-size:13px}
+  .check{min-height:44px;align-items:center;font-size:15px}
+  .check input{margin-top:0;width:22px;height:22px;flex:none}
+  input[type=text],input[type=email],input[type=tel],input[type=date],input[type=datetime-local],select{min-height:48px}
+  .btn{min-height:48px}
+  .btn.small{min-height:44px;font-size:14px}
+  /* the send button stays in reach */
+  .submitbar{position:sticky;bottom:calc(68px + env(safe-area-inset-bottom,0px));z-index:3;background:var(--bg);margin-inline:-16px;padding:10px 16px;border-top:1px solid var(--line);box-shadow:0 -6px 12px rgba(0,0,0,.06)}
+  .submitbar .btn{flex:1 1 100%}
+  .submitbar .hint:empty{display:none}
+  /* survey scores: 5 x 2 grid of big targets */
+  .scale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+  .scale label{width:auto;height:48px;font-size:16px}
+  /* register: list, then the case full screen with a back button */
+  .regactions{width:100%}
+  .regactions .btn{flex:1 1 auto}
+  .filters{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .filters input{grid-column:1/-1}
+  .filters select,.filters input{min-height:44px;font-size:16px}
+  .item{min-height:64px}
+  #reg:not(.detail) .sheet{display:none}
+  #reg.detail .list,#view-register:has(#reg.detail) > :not(#reg){display:none}
+  .sheet{padding:14px 12px;border-radius:8px}
+  .sheet .back{display:inline-flex;align-items:center;min-height:44px;background:none;border:0;padding:0;color:var(--accent);font:700 15px var(--f-body);cursor:pointer}
+  .kv{grid-template-columns:minmax(0,1fr)}
+  .kv dt{margin-top:6px}
+  /* dashboard */
+  .tiles{grid-template-columns:1fr 1fr;gap:8px}
+  .tile{padding:12px}
+  .tile .n{font-size:24px}
+  .barrow{grid-template-columns:minmax(0,8.5em) minmax(0,1fr) 2.2em}
+  /* bottom tab bar */
+  .bottomnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--header);border-top:3px solid var(--orange);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .bottomnav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:62px;background:none;border:0;color:rgba(255,255,255,.72);font:600 11.5px var(--f-body);cursor:pointer}
+  .bottomnav button[aria-current="page"]{color:#fff}
+  .bottomnav button[aria-current="page"] svg{color:var(--orange)}
+  .bottomnav button[hidden]{display:none}
+  footer.site{margin-top:12px;padding-block:18px 22px;font-size:13px}
+  footer.site a{display:inline-block;padding-block:6px}
+  .toast{bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+}
 </style>
 </head>
 <body>
@@ -187,9 +275,10 @@ footer.site img{width:44px;height:44px;border-radius:50%}
     <h1>Tell us what happened</h1>
     <p class="lede">Use this form for complaints, compliments, accidents, near misses and any concern about safety, people or wildlife on our tours. Every report gets a reference number and a named person who follows it up.</p>
   </div>
+  <form id="reportForm" class="stack" novalidate>
   <div class="sos" role="note">
-    <div class="em"><b>Life-threatening emergency?</b><span>Call the emergency services first</span><a class="num" href="tel:911">911</a><span class="hint">Police, fire and ambulance in Dominica</span></div>
-    <div class="help"><b>Need help during your tour?</b><span>Call or WhatsApp us, then tell your guide</span><a class="num" id="helpnum" href="tel:+17676165827">+1 (767) 616-5827</a><span class="hint">Answered during tour operating hours</span></div>
+    <div class="em"><b>Life-threatening emergency?</b><span>Call the emergency services first</span><a class="num" href="tel:911"><span class="cta">Call&nbsp;</span>911</a><span class="hint">Police, fire and ambulance in Dominica</span></div>
+    <div class="help"><b>Need help during your tour?</b><span>Call or WhatsApp us, then tell your guide</span><a class="num" id="helpnum" href="tel:+17676165827">+1 (767) 616-5827</a><a class="wa" id="helpwa" href="https://wa.me/17676165827">WhatsApp us</a><span class="hint">Answered during tour operating hours</span></div>
   </div>
 
   <div class="who" role="group" aria-label="I am reporting as">
@@ -197,7 +286,6 @@ footer.site img{width:44px;height:44px;border-radius:50%}
     <button type="button" aria-pressed="false" data-role="staff" id="role-staff">I'm staff, a guide or driver</button>
   </div>
 
-  <form id="reportForm" class="stack" novalidate>
     <fieldset>
       <legend>What is this about?</legend>
       <div class="cats" id="cats"></div>
@@ -210,7 +298,7 @@ footer.site img{width:44px;height:44px;border-radius:50%}
       <legend>What happened</legend>
       <div class="grid2">
         <div class="field full"><label for="f-title">Short summary</label><input type="text" id="f-title" maxlength="200" placeholder="e.g. Guest slipped on wet steps at the waterfall"></div>
-        <div class="field"><label for="f-when">When did it happen?</label><input type="datetime-local" id="f-when"></div>
+        <div class="field"><label for="f-when">When did it happen? <span class="hint">(blank = just now)</span></label><input type="datetime-local" id="f-when"></div>
         <div class="field"><label for="f-where">Where?</label><input type="text" id="f-where" maxlength="200" placeholder="Site, vehicle, hotel or town"></div>
         <div class="field"><label for="f-tour">Tour or booking reference <span class="hint">(if known)</span></label><input type="text" id="f-tour" maxlength="200" placeholder="e.g. Waterfall Trail, 26 Oct"></div>
         <div class="field"><label for="f-sev">How serious is it?</label><select id="f-sev"><option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option></select></div>
@@ -252,7 +340,7 @@ footer.site img{width:44px;height:44px;border-radius:50%}
       </div>
     </fieldset>
 
-    <div class="row"><button class="btn" type="submit" id="submitBtn">Send report</button><span class="hint" id="formMsg" role="status"></span></div>
+    <div class="row submitbar"><button class="btn" type="submit" id="submitBtn">Send report</button><span class="hint" id="formMsg" role="status"></span></div>
   </form>
 
   <div class="done" id="doneBox" hidden>
@@ -290,7 +378,7 @@ footer.site img{width:44px;height:44px;border-radius:50%}
         <div class="field"><label for="s-email">Email <span class="hint">(only if you want a reply)</span></label><input type="email" id="s-email" autocomplete="email"></div>
       </div>
     </fieldset>
-    <div class="row"><button class="btn" type="submit" id="surveyBtn">Send feedback</button><span class="hint" id="surveyMsg" role="status"></span></div>
+    <div class="row submitbar"><button class="btn" type="submit" id="surveyBtn">Send feedback</button><span class="hint" id="surveyMsg" role="status"></span></div>
   </form>
 </section>
 
@@ -317,7 +405,7 @@ footer.site img{width:44px;height:44px;border-radius:50%}
   <div class="row" style="justify-content:space-between;align-items:flex-end">
     <div><h1>Case register</h1>
     <p class="lede">Every report from every channel. Open a case to assign an owner, record the root cause and corrective action, and close it with a reply to the reporter.</p></div>
-    <div class="row"><button class="btn small ghost" type="button" id="refreshBtn">Refresh</button><button class="btn small" type="button" id="logBtn">Log a phone or email report</button></div>
+    <div class="row regactions"><button class="btn small ghost" type="button" id="refreshBtn">Refresh</button><button class="btn small" type="button" id="logBtn">Log a phone or email report</button></div>
   </div>
   <div class="filters">
     <input type="text" id="q" placeholder="Search summary, place, reference" aria-label="Search">
@@ -325,7 +413,7 @@ footer.site img{width:44px;height:44px;border-radius:50%}
     <select id="fStatus" aria-label="Status"><option value="">All statuses</option><option value="open">Open (not closed)</option></select>
     <select id="fSev" aria-label="Severity"><option value="">All severities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
   </div>
-  <div class="reg">
+  <div class="reg" id="reg">
     <div class="list" id="list" aria-label="Cases"></div>
     <div class="sheet" id="sheet"><div class="empty">Choose a case to see its details.</div></div>
   </div>
@@ -354,6 +442,13 @@ footer.site img{width:44px;height:44px;border-radius:50%}
     <div><a href="https://experiencescaribbean.com/our-policies/">Policies &amp; privacy</a> · <a href="https://experiencescaribbean.com/codes-of-conduct/">Codes of Conduct</a> · <a href="https://experiencescaribbean.com/">experiencescaribbean.com</a></div>
   </div>
 </footer>
+<nav class="bottomnav" aria-label="Sections">
+  <button type="button" data-view="report"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Report</span></button>
+  <button type="button" data-view="survey"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1Z"/></svg><span>Survey</span></button>
+  <button type="button" data-view="register" data-staff hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Cases</span></button>
+  <button type="button" data-view="dashboard" data-staff hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Dashboard</span></button>
+  <button type="button" data-view="signin" id="bn-signin"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Staff</span></button>
+</nav>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
@@ -534,7 +629,7 @@ function renderList(){
   rows.forEach(c=>{
     const cat=CAT[c.category]||{name:c.category};
     const meta=[c.ref, cat.name, fmtD(c.receivedAt)].join(" · ");
-    list.append(el("button",{type:"button",class:"item sev-"+c.severity,"aria-current":selected===c.id?"true":"false",onclick:()=>{selected=c.id;renderList();renderSheet()}},
+    list.append(el("button",{type:"button",class:"item sev-"+c.severity,"aria-current":selected===c.id?"true":"false",onclick:()=>{selected=c.id;renderList();renderSheet();if(phone()){$("#reg").classList.add("detail");window.scrollTo(0,0)}}},
       el("span",{class:"stripe"}),
       el("span",{class:"main"},el("span",{class:"t",text:c.title}),el("span",{class:"m",text:meta})),
       el("span",{class:"side"},pills(c),c.restricted?el("span",{class:"pill restricted",text:"Restricted"}):null,c.example?el("span",{class:"pill ex",text:"Example"}):null)));
@@ -543,6 +638,7 @@ function renderList(){
 function renderSheet(){
   const s=$("#sheet"), c=cases.find(x=>x.id===selected); s.replaceChildren();
   if(!c){s.append(el("div",{class:"empty",text:"Choose a case to see its details."}));return}
+  s.append(el("button",{type:"button",class:"back",onclick:()=>{$("#reg").classList.remove("detail");window.scrollTo(0,0)}},"← All cases"));
   const cat=CAT[c.category]||{name:c.category,crit:""};
   const si=STATUSES.indexOf(c.status);
   s.append(el("div",{class:"head"},el("div",{},el("div",{class:"ref",text:c.ref}),el("h2",{text:c.title})),el("div",{class:"row"},pills(c),c.restricted?el("span",{class:"pill restricted",text:"Restricted"}):null,c.example?el("span",{class:"pill ex",text:"Example"}):null)));
@@ -726,24 +822,28 @@ async function handleSession(session){
 function applyStaffUI(){
   const on=isStaffUI();
   document.querySelectorAll("[data-staff]").forEach(n=>n.hidden=!on);
-  $("#tab-signin").hidden=on;
+  $("#tab-signin").hidden=on; $("#bn-signin").hidden=on;
   $("#signout").hidden=demo||!staff;
   $("#channelField").hidden=!staff;
   $("#logBtn").hidden=!staff;
   const m=$("#mode");
   if(demo){m.hidden=false;m.innerHTML="<strong>Demo mode.</strong> Not connected to the database yet: example cases are shown and anything you add disappears on reload.";}
-  else if(staff){m.hidden=false;m.textContent="";m.append(el("strong",{text:"Signed in as "+staff.full_name+"."})," Roles: "+(staff.roles&&staff.roles.length?staff.roles.join(", "):"staff")+".");}
+  else if(staff){m.hidden=false;m.textContent="";m.append(el("strong",{text:"Signed in as "+staff.full_name+"."})," Roles: "+(staff.roles&&staff.roles.length?staff.roles.join(", "):"staff")+".",el("button",{type:"button",class:"linkbtn",onclick:signOut},"Sign out"));}
   else m.hidden=true;
   if(!on&&STAFF_VIEWS.includes(location.hash.slice(1)))show("signin");
 }
 
 // ---------- views ----------
+const phone=()=>window.matchMedia("(max-width:767px)").matches;
+async function signOut(){ if(sb) await sb.auth.signOut(); clearInterval(refreshTimer); show("report"); toast("Signed out"); }
 const VIEWS=["report","survey","signin","register","dashboard"];
 function show(v){
   if(!VIEWS.includes(v))v="report";
   if(STAFF_VIEWS.includes(v)&&!isStaffUI())v="signin";
   if(v==="signin"&&isStaffUI()&&!demo)v="register";
   VIEWS.forEach(x=>{$("#view-"+x).hidden=x!==v;const t=$("#tab-"+x);if(t)t.setAttribute("aria-selected",x===v)});
+  document.querySelectorAll(".bottomnav [data-view]").forEach(b=>{if(b.dataset.view===v)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
+  if(v!=="register")$("#reg").classList.remove("detail");
   if(location.hash.slice(1)!==v)history.replaceState(null,"",location.pathname+location.search+"#"+v);
   if(v==="dashboard")renderDash();
 }
@@ -755,12 +855,12 @@ function prefill(){
 
 // ---------- boot ----------
 function boot(){
-  $("#helpnum").textContent=CONFIG.helpNumber; $("#helpnum").href="tel:"+CONFIG.helpTel;
+  $("#helpnum").textContent=CONFIG.helpNumber; $("#helpnum").href="tel:"+CONFIG.helpTel; $("#helpwa").href="https://wa.me/"+CONFIG.helpTel.replace(/\D/g,"");
   CATS.forEach(c=>$("#fCat").append(el("option",{value:c.id,text:c.name})));
   STATUSES.forEach(s=>$("#fStatus").append(el("option",{value:s,text:s})));
   renderScales();
   role=qs.get("as")==="staff"?"staff":"guest"; setRole(role); prefill();
-  document.querySelectorAll("nav.tabs button[data-view]").forEach(b=>b.addEventListener("click",()=>show(b.dataset.view)));
+  document.querySelectorAll("nav.tabs button[data-view], .bottomnav button[data-view]").forEach(b=>b.addEventListener("click",()=>{show(b.dataset.view);window.scrollTo(0,0)}));
   document.querySelectorAll(".who button").forEach(b=>b.addEventListener("click",()=>setRole(b.dataset.role)));
   $("#cats").addEventListener("change",onCat); $("#c-anon").addEventListener("change",onAnon);
   $("#reportForm").addEventListener("submit",submitReport); $("#surveyForm").addEventListener("submit",submitSurvey);
@@ -771,7 +871,7 @@ function boot(){
   $("#period").addEventListener("change",()=>{demo?renderDash():loadData()}); $("#exportBtn").addEventListener("click",exportCsv);
   $("#refreshBtn").addEventListener("click",()=>{demo?renderAll():loadData().then(()=>toast("Register refreshed"))});
   $("#logBtn").addEventListener("click",()=>{setRole("staff");show("report");$("#f-channel").value="Phone";$("#f-title").focus()});
-  $("#signout").addEventListener("click",async()=>{await sb.auth.signOut();clearInterval(refreshTimer);show("report");toast("Signed out")});
+  $("#signout").addEventListener("click",signOut);
   window.addEventListener("hashchange",()=>{if(!/access_token=/.test(location.hash))show(location.hash.slice(1))});
 
   if(demo){
