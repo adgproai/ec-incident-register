@@ -107,6 +107,10 @@ legend{font:700 13px var(--f-body);text-transform:uppercase;letter-spacing:.06em
 .warnbox{border-left:3px solid var(--crit);background:var(--crit-soft);padding:10px 14px;border-radius:0 8px 8px 0;font-size:14px}
 .done{border:1px solid var(--accent);border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:6px;padding:18px}
 .ref{font:600 14px var(--f-mono);letter-spacing:.02em}
+.waalert{border-top:1px solid var(--line);margin:4px 0 14px;padding-top:12px}
+.waalert p{margin:0 0 10px}
+.wabtn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:3px;background:#25d366;color:#08301a;font:700 15px var(--f-body);text-decoration:none}
+@media (max-width:767px){.wabtn{display:flex;min-height:52px}}
 .stack{display:flex;flex-direction:column;gap:16px}
 .narrow{max-width:460px}
 .reg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:20px;align-items:start}
@@ -352,6 +356,10 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
   <div class="done" id="doneBox" hidden>
     <h2>Thank you. Your report is logged.</h2>
     <p>Reference <span class="ref" id="doneRef"></span>. <span id="doneWhen"></span> Keep this reference if you contact us about it.</p>
+    <div class="waalert" id="waAlert" hidden>
+      <p id="waAlertText"></p>
+      <a class="wabtn" id="waAlertBtn" href="#" target="_blank" rel="noopener">Send to the team on WhatsApp</a>
+    </div>
     <button class="btn ghost small" type="button" id="another">Send another report</button>
   </div>
 </section>
@@ -612,6 +620,23 @@ async function submitReport(e){
     renderAll();
   }
   $("#submitBtn").disabled=false; msg.textContent="";
+  // After every report: optional one-tap WhatsApp to the team with the reference and a short summary
+  // (the email carries the full details). The person still has to press send in WhatsApp.
+  // "Urgent" uses the same rule as the automatic alerts: severity High or Critical,
+  // or category injury, emergency or child protection.
+  const sev=$("#f-sev").value, urgent=sev==="High"||sev==="Critical"||["injury","emergency","safeguarding"].includes(cat);
+  {
+    const cd0=CAT[cat], place=$("#f-where").value.trim(), tour=$("#f-tour").value.trim();
+    const lines=cd0.restricted
+      ? [(urgent?"URGENT confidential":"New confidential")+" report submitted (ref "+ref+").","Please check your email."]
+      : [(urgent?"URGENT report":"New report")+" (ref "+ref+")","What: "+cd0.name+" · "+sev,"Summary: "+title,place&&("Where: "+place),tour&&("Tour/booking: "+tour),"Full details are in the email to the team."].filter(Boolean);
+    $("#waAlertBtn").href="https://wa.me/"+CONFIG.helpTel.replace(/\D/g,"")+"?text="+encodeURIComponent(lines.join("\n"));
+    $("#waAlertBtn").textContent=urgent?"Alert the team on WhatsApp":"Send to the team on WhatsApp";
+    $("#waAlertText").innerHTML=urgent
+      ? "<strong>This is marked urgent.</strong> Your report is saved and the team has been emailed. Tap below to alert them on WhatsApp too."
+      : "Your report is saved and the team has been emailed. You can also let them know on WhatsApp.";
+  }
+  $("#waAlert").hidden=false;
   $("#reportForm").reset(); onAnon(); prefill(); renderCats();
   $("#doneRef").textContent=ref;
   const cd=CAT[cat];
