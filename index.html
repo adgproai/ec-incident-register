@@ -260,7 +260,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
     <div class="bar">
       <a class="brand" href="https://experiencescaribbean.com/"><img src="https://experiencescaribbean.com/wp-content/uploads/2025/08/86d9f8a6-a0be-42c7-b586-296c2a6424b8-all-color-logos-12-600x600.png" alt="Experiences Caribbean logo" width="52" height="52"><span class="words"><b>Experiences Caribbean</b><span>Feedback, complaints and incident reports</span></span></a>
       <nav class="tabs" role="tablist" aria-label="Sections">
-        <button role="tab" id="tab-report" aria-selected="true" data-view="report">Report</button>
+        <button role="tab" id="tab-report" aria-selected="true" data-view="report" hidden>New report</button>
         <button role="tab" id="tab-survey" aria-selected="false" data-view="survey">Trip survey</button>
         <span class="sep" data-staff hidden></span>
         <button role="tab" id="tab-register" aria-selected="false" data-view="register" data-staff hidden>Case register</button>
@@ -849,6 +849,7 @@ function show(v){
   if(v==="signin"&&isStaffUI()&&!demo)v="register";
   VIEWS.forEach(x=>{$("#view-"+x).hidden=x!==v;const t=$("#tab-"+x);if(t)t.setAttribute("aria-selected",x===v)});
   document.querySelectorAll(".bottomnav [data-view]").forEach(b=>{if(b.dataset.view===v)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
+  $("#tab-report").hidden=v==="report"; // on the form itself the menu item is pointless, so it only shows elsewhere
   if(v!=="register")$("#reg").classList.remove("detail");
   if(location.hash.slice(1)!==v)history.replaceState(null,"",location.pathname+location.search+"#"+v);
   if(v==="dashboard")renderDash();
