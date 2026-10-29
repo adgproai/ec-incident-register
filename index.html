@@ -118,6 +118,10 @@ legend{font:700 13px var(--f-body);text-transform:uppercase;letter-spacing:.06em
 .photoadd{cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .casephotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
 .casephotos:empty{display:none}
+.donephotos{margin:4px 0 12px}
+.donephotos .casephotos{grid-template-columns:repeat(auto-fill,minmax(72px,1fr));margin:6px 0}
+.donephotos p{margin:0}
+.photolink{overflow-wrap:anywhere}
 .casephotos a{display:block;aspect-ratio:1;border-radius:6px;overflow:hidden;border:1px solid var(--line);background:var(--sunk)}
 .casephotos img{width:100%;height:100%;object-fit:cover;display:block}
 .whonote strong{color:var(--ink)}
@@ -390,6 +394,11 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
   <div class="done" id="doneBox" hidden>
     <h2>Thank you. Your report is logged.</h2>
     <p>Reference <span class="ref" id="doneRef"></span>. <span id="doneWhen"></span> Keep this reference if you contact us about it.</p>
+    <div class="donephotos" id="donePhotos" hidden>
+      <p id="donePhotosText"></p>
+      <div class="casephotos" id="donePhotoGrid"></div>
+      <p class="hint" id="donePhotoLink"></p>
+    </div>
     <div class="waalert" id="waAlert" hidden>
       <p id="waAlertText"></p>
       <a class="wabtn" id="waAlertBtn" href="#" target="_blank" rel="noopener">Send to the team on WhatsApp</a>
@@ -481,6 +490,13 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
     <div class="panel"><h3>Open corrective actions</h3><div class="scroll"><table class="t" id="actions"></table></div></div>
     <div class="panel"><h3>Post-trip satisfaction</h3><div id="sat"></div></div>
   </div>
+</section>
+
+<!-- PHOTOS (anyone with the link) -->
+<section id="view-photos" class="stack" hidden>
+  <div><h1>Report photos</h1><p class="lede" id="phMeta">Loading…</p></div>
+  <div class="casephotos" id="phGrid"></div>
+  <p class="hint" id="phNote"></p>
 </section>
 
 <!-- TEAM (admins only) -->
@@ -662,7 +678,23 @@ function onAnon(){const a=$("#c-anon").checked;["#c-name","#c-email","#c-phone"]
 
 // ---------- photos (up to 5 per report) ----------
 // Resized on the phone to at most 1600px JPEG, so uploads stay quick on island mobile data.
-const MAX_PHOTOS=5; let photos=[];
+const MAX_PHOTOS=5; let photos=[], sentPhotos=[], lastFolder=null;
+const photoLink=f=>location.origin+location.pathname+"#photos="+f;
+// Photo page: #photos=<folder> shows a report's photos to whoever has the link (non-confidential, 30 days).
+async function renderPhotoPage(folder){
+  const meta=$("#phMeta"), grid=$("#phGrid"), note=$("#phNote"); grid.replaceChildren(); note.textContent=""; meta.textContent="Loading…";
+  if(demo){meta.textContent="Demo mode: photo links work on the live register.";return}
+  let r={};
+  try{r=await fetch(CONFIG.supabaseUrl+"/functions/v1/report-photos",{method:"POST",headers:{"Content-Type":"application/json",apikey:CONFIG.supabaseKey,Authorization:"Bearer "+CONFIG.supabaseKey},body:JSON.stringify({folder})}).then(x=>x.json())}catch(_){r={status:"error"}}
+  if(r.status==="ok"){
+    meta.textContent="Photos sent with report "+r.ref+" on "+fmt(ms(r.received_at))+".";
+    r.photos.forEach((u,i)=>grid.append(el("a",{href:u,target:"_blank",rel:"noopener"},el("img",{src:u,alt:"Photo "+(i+1)+" for "+r.ref}))));
+    note.textContent="Tap a photo to open it full size. This link works for "+r.days+" days after the report was sent; after that the photos stay in the case register.";
+  } else if(r.status==="expired"){ meta.textContent="This photo link has expired. The photos for report "+r.ref+" are kept in the case register."; }
+  else if(r.status==="confidential"){ meta.textContent="Photos for confidential reports can only be seen in the case register by the designated person."; }
+  else if(r.status==="error"){ meta.textContent="The photos couldn't be loaded. Check your connection and try again."; }
+  else meta.textContent="No photos were found for this link. Check that the whole link was copied.";
+}
 async function shrink(file){
   try{
     let bmp; try{bmp=await createImageBitmap(file,{imageOrientation:"from-image"})}catch(_){bmp=await createImageBitmap(file)}
@@ -701,7 +733,7 @@ function newFolder(){
 }
 async function uploadPhotos(msg){
   if(!photos.length)return [];
-  const folder=newFolder(), paths=[];
+  const folder=newFolder(), paths=[]; lastFolder=folder;
   for(let i=0;i<photos.length;i++){
     msg.textContent="Uploading photo "+(i+1)+" of "+photos.length+"…";
     const b=photos[i].blob, ext=b.type==="image/png"?"png":b.type==="image/webp"?"webp":"jpg";
@@ -768,7 +800,7 @@ async function submitReport(e){
     const cd0=CAT[cat], place=$("#f-where").value.trim(), tour=$("#f-tour").value.trim();
     const lines=cd0.restricted
       ? [(urgent?"URGENT confidential":"New confidential")+" report submitted (ref "+ref+").","Please check your email."]
-      : [(urgent?"URGENT report":"New report")+" (ref "+ref+")","What: "+cd0.name+" · "+sev,"Summary: "+title,place&&("Where: "+place),tour&&("Tour/booking: "+tour),nPhotos&&("Photos: "+nPhotos+" (in the register)"),"Full details are in the email to the team."].filter(Boolean);
+      : [(urgent?"URGENT report":"New report")+" (ref "+ref+")","What: "+cd0.name+" · "+sev,"Summary: "+title,place&&("Where: "+place),tour&&("Tour/booking: "+tour),nPhotos&&(lastFolder&&!demo?"Photos ("+nPhotos+"): "+photoLink(lastFolder):"Photos: "+nPhotos+" (in the register)"),"Full details are in the email to the team."].filter(Boolean);
     $("#waAlertBtn").href="https://wa.me/"+CONFIG.helpTel.replace(/\D/g,"")+"?text="+encodeURIComponent(lines.join("\n"));
     $("#waAlertBtn").textContent=urgent?"Alert the team on WhatsApp":"Send to the team on WhatsApp";
     $("#waAlertText").innerHTML=urgent
@@ -776,7 +808,16 @@ async function submitReport(e){
       : "Your report is saved and the team has been emailed. You can also let them know on WhatsApp.";
   }
   $("#waAlert").hidden=false;
-  $("#reportForm").reset(); clearPhotos(demo); onAnon(); prefill(); renderCats();
+  // Show the reporter the photos they sent, and a link they can keep (not for confidential reports).
+  if(!demo)sentPhotos.forEach(u=>URL.revokeObjectURL(u)); sentPhotos=photos.map(p=>p.url);
+  const dp=$("#donePhotos"); dp.hidden=!nPhotos; $("#donePhotoGrid").replaceChildren(); $("#donePhotoLink").replaceChildren();
+  if(nPhotos){
+    $("#donePhotosText").textContent=nPhotos===1?"Your photo was sent with the report.":"Your "+nPhotos+" photos were sent with the report.";
+    sentPhotos.forEach((u,i)=>$("#donePhotoGrid").append(el("div",{class:"ph"},el("img",{src:u,alt:"Photo "+(i+1)}))));
+    if(CAT[cat].restricted) $("#donePhotoLink").textContent="Because this report is confidential, only the designated person can see them.";
+    else if(lastFolder&&!demo) $("#donePhotoLink").append("To see them again later, keep this link: ",el("a",{class:"photolink",href:photoLink(lastFolder),target:"_blank",rel:"noopener"},photoLink(lastFolder))," (works for 30 days).");
+  }
+  $("#reportForm").reset(); clearPhotos(true); lastFolder=null; onAnon(); prefill(); renderCats();
   $("#doneRef").textContent=ref;
   const cd=CAT[cat];
   $("#doneWhen").textContent=cd.ack===0?"Someone will look at it today.":"We'll acknowledge it within "+cd.ack+" working day"+(cd.ack>1?"s":"")+" and aim to resolve it within "+cd.resolve+" days.";
@@ -1040,8 +1081,10 @@ function applyStaffUI(){
 // ---------- views ----------
 const phone=()=>window.matchMedia("(max-width:767px)").matches;
 async function signOut(){ if(sb) await sb.auth.signOut(); clearInterval(refreshTimer); show("report"); toast("Signed out"); }
-const VIEWS=["report","survey","signin","register","dashboard","team"];
+const VIEWS=["report","survey","signin","register","dashboard","team","photos"];
 function show(v){
+  let folder=null; if(/^photos=/.test(v||"")){folder=v.slice(7);v="photos"}
+  if(v==="photos"&&!folder)v="report";
   if(!VIEWS.includes(v))v="report";
   if(STAFF_VIEWS.includes(v)&&!isStaffUI())v="signin";
   if(v==="signin"&&isStaffUI()&&!demo)v="register";
@@ -1050,7 +1093,8 @@ function show(v){
   document.querySelectorAll(".bottomnav [data-view]").forEach(b=>{if(b.dataset.view===v)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   $("#tab-report").hidden=v==="report"; // on the form itself the menu item is pointless, so it only shows elsewhere
   if(v!=="register")$("#reg").classList.remove("detail");
-  if(location.hash.slice(1)!==v)history.replaceState(null,"",location.pathname+location.search+"#"+v);
+  if(!folder&&location.hash.slice(1)!==v)history.replaceState(null,"",location.pathname+location.search+"#"+v);
+  if(v==="photos")renderPhotoPage(folder);
   if(v==="dashboard")renderDash();
   if(v==="team")renderTeam();
 }
