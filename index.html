@@ -77,6 +77,14 @@ h1::after{content:"";display:block;width:56px;height:3px;background:var(--orange
 @media (max-width:720px){.grid2{grid-template-columns:minmax(0,1fr)}}
 .field{display:flex;flex-direction:column;gap:5px;min-width:0}
 .field.full{grid-column:1/-1}
+/* Voice entry: a "Speak" button on the label line of written fields (hidden where the browser has no speech recognition) */
+.field.hasmic{position:relative}
+.mic{position:absolute;top:-4px;right:0;display:inline-flex;align-items:center;gap:5px;min-height:30px;padding:0 10px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font:600 12.5px var(--f-btn);cursor:pointer}
+.mic svg{width:15px;height:15px}
+.mic:hover{border-color:var(--accent)}
+.mic.on{background:var(--crit);border-color:var(--crit);color:#fff}
+@media (prefers-reduced-motion:no-preference){.mic.on svg{animation:micpulse 1.2s ease-in-out infinite}}
+@keyframes micpulse{50%{opacity:.35}}
 label,.lbl{font-weight:700;font-size:13.5px}
 .hint{font-size:12.5px;color:var(--muted);font-weight:400}
 input[type=text],input[type=email],input[type=tel],input[type=date],input[type=datetime-local],select,textarea{font:15px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
@@ -602,6 +610,59 @@ const ms = v=>v?Date.parse(v):null;
 const dayMs = v=>v?Date.parse(v+"T12:00:00"):null;
 const isoDay = m=>m?new Date(m-new Date(m).getTimezoneOffset()*6e4).toISOString().slice(0,10):null;
 function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2800)}
+
+// ---------- voice entry ----------
+// Uses the browser's own speech recognition (Chrome, Edge, Safari, Samsung Internet). Where it is not available
+// (e.g. Firefox, some in-app browsers) no button is shown and the phone keyboard's dictation key still works.
+// Speech is turned into text by the browser/phone provider; nothing is recorded or stored by this app.
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const MIC_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+const SPEECH_LANG = {French:"fr-FR", Spanish:"es-ES", German:"de-DE"};
+let micActive = null; // {rec, btn}
+function speechLang(){
+  const picked = ($("#c-lang")||{}).value;
+  return SPEECH_LANG[picked] || navigator.language || "en-US";
+}
+function stopMic(){ if(micActive){ try{micActive.rec.stop()}catch(e){} } }
+function attachMic(id){
+  const input = document.getElementById(id);
+  if(!SpeechRec || !input || input.dataset.mic) return;
+  const field = input.closest(".field"); if(!field) return;
+  input.dataset.mic = "1"; field.classList.add("hasmic");
+  const label = field.querySelector("label") ? field.querySelector("label").textContent.trim() : "this field";
+  const btn = el("button",{type:"button",class:"mic","aria-label":"Speak instead of typing: "+label,"aria-pressed":"false"});
+  btn.innerHTML = MIC_SVG+"<span>Speak</span>";
+  field.append(btn);
+  btn.addEventListener("click",()=>{
+    if(micActive && micActive.btn===btn){ stopMic(); return; }
+    stopMic();
+    const rec = new SpeechRec();
+    rec.lang = speechLang(); rec.interimResults = true; rec.continuous = input.tagName==="TEXTAREA";
+    const base = input.value ? input.value.replace(/\s*$/," ") : "";
+    const max = +input.getAttribute("maxlength") || 8000;
+    let finalText = "";
+    rec.onresult = ev=>{
+      let interim = "";
+      for(let i=ev.resultIndex;i<ev.results.length;i++){
+        const t = ev.results[i][0].transcript;
+        if(ev.results[i].isFinal) finalText += (finalText && !/^\s/.test(t) ? " " : "") + t.trim(); else interim += t;
+      }
+      let text = finalText + (interim ? (finalText?" ":"") + interim.trim() : "");
+      if(!input.value.trim() || base===""){ text = text.charAt(0).toUpperCase()+text.slice(1); }
+      input.value = (base + text).slice(0,max);
+      input.dispatchEvent(new Event("input",{bubbles:true}));
+    };
+    rec.onerror = ev=>{
+      if(ev.error==="not-allowed"||ev.error==="service-not-allowed") toast("Allow microphone access in your browser to use Speak, or use your keyboard's microphone key.");
+      else if(ev.error==="no-speech") toast("Didn't catch that. Tap Speak and try again.");
+      else if(ev.error!=="aborted") toast("Voice entry stopped ("+ev.error+"). You can type instead.");
+    };
+    rec.onend = ()=>{ btn.classList.remove("on"); btn.setAttribute("aria-pressed","false"); btn.querySelector("span").textContent="Speak"; if(micActive&&micActive.btn===btn) micActive=null; input.focus(); };
+    try{ rec.start(); }catch(e){ toast("Voice entry isn't available right now. You can type instead."); return; }
+    micActive = {rec, btn};
+    btn.classList.add("on"); btn.setAttribute("aria-pressed","true"); btn.querySelector("span").textContent="Listening… tap to stop";
+  });
+}
 function makeRef(at){const d=new Date(at),p=n=>String(n).padStart(2,"0");return "TL-"+String(d.getFullYear()).slice(2)+p(d.getMonth()+1)+p(d.getDate())+"-"+Math.random().toString(36).slice(2,6).toUpperCase()}
 function dueFor(c){const cat=CAT[c.category]||CAT.complaint;return c.receivedAt+cat.resolve*DAY}
 function isOverdue(c){return c.status!=="Closed" && Date.now()>dueFor(c)}
@@ -922,6 +983,7 @@ function renderSheet(){
     el("label",{class:"check"},el("input",{type:"checkbox",id:"h-eff",checked:!!c.effective})," Checked the action worked"),
     el("label",{class:"check"},el("input",{type:"checkbox",id:"h-resp",checked:!!c.responseSent})," Reply sent to the reporter"),
     ta("h-note","Add a note to the case log",""))));
+  setTimeout(()=>["h-find","h-action","h-note"].forEach(attachMic));
   const saveBtn=el("button",{class:"btn",type:"submit"},"Save changes");
   const fm=el("span",{class:"hint",role:"status"});
   f.append(el("div",{class:"row"},saveBtn,fm));
@@ -1188,6 +1250,7 @@ function prefill(){
 
 // ---------- boot ----------
 function boot(){
+  ["f-title","f-desc","f-where","x-persons","x-injury","x-witness","x-supplier","s-comment"].forEach(attachMic);
   $("#helpnum").textContent=CONFIG.helpNumber; $("#helpnum").href="tel:"+CONFIG.helpTel; $("#helpwa").href="https://wa.me/"+CONFIG.helpTel.replace(/\D/g,"");
   CATS.forEach(c=>$("#fCat").append(el("option",{value:c.id,text:c.name})));
   STATUSES.forEach(s=>$("#fStatus").append(el("option",{value:s,text:s})));
