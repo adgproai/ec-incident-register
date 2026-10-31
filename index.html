@@ -680,6 +680,16 @@ function onAnon(){const a=$("#c-anon").checked;["#c-name","#c-email","#c-phone"]
 // Resized on the phone to at most 1600px JPEG, so uploads stay quick on island mobile data.
 const MAX_PHOTOS=5; let photos=[], sentPhotos=[], lastFolder=null;
 const photoLink=f=>location.origin+location.pathname+"#photos="+f;
+// WhatsApp links. Without a number, WhatsApp asks the sender which chat to use, so staff can pick the team group.
+// Guests and confidential reports always go 1:1 to the company number instead, never to a group.
+const waGroupLink=text=>"https://wa.me/?text="+encodeURIComponent(text);
+const waCompanyLink=text=>"https://wa.me/"+CONFIG.helpTel.replace(/\D/g,"")+"?text="+encodeURIComponent(text);
+const isUrgent=(sev,cat)=>sev==="High"||sev==="Critical"||["injury","emergency","safeguarding"].includes(cat);
+function caseWaText(c){
+  const cat=CAT[c.category]||{name:c.category};
+  return [(isUrgent(c.severity,c.category)?"URGENT report":"Report")+" (ref "+c.ref+")","What: "+cat.name+" · "+c.severity,"Summary: "+c.title,
+    c.place&&("Where: "+c.place),c.tour&&("Tour/booking: "+c.tour),"Status: "+c.status,"Open the register: "+location.origin+location.pathname+"#register"].filter(Boolean).join("\n");
+}
 // Photo page: #photos=<folder> shows a report's photos to whoever has the link (non-confidential, 30 days).
 async function renderPhotoPage(folder){
   const meta=$("#phMeta"), grid=$("#phGrid"), note=$("#phNote"); grid.replaceChildren(); note.textContent=""; meta.textContent="Loading…";
@@ -801,11 +811,12 @@ async function submitReport(e){
     const lines=cd0.restricted
       ? [(urgent?"URGENT confidential":"New confidential")+" report submitted (ref "+ref+").","Please check your email."]
       : [(urgent?"URGENT report":"New report")+" (ref "+ref+")","What: "+cd0.name+" · "+sev,"Summary: "+title,place&&("Where: "+place),tour&&("Tour/booking: "+tour),nPhotos&&(lastFolder&&!demo?"Photos ("+nPhotos+"): "+photoLink(lastFolder):"Photos: "+nPhotos+" (in the register)"),"Full details are in the email to the team."].filter(Boolean);
-    $("#waAlertBtn").href="https://wa.me/"+CONFIG.helpTel.replace(/\D/g,"")+"?text="+encodeURIComponent(lines.join("\n"));
-    $("#waAlertBtn").textContent=urgent?"Alert the team on WhatsApp":"Send to the team on WhatsApp";
-    $("#waAlertText").innerHTML=urgent
+    const toGroup=role==="staff"&&!cd0.restricted;
+    $("#waAlertBtn").href=(toGroup?waGroupLink:waCompanyLink)(lines.join("\n"));
+    $("#waAlertBtn").textContent=toGroup?(urgent?"Alert the team group on WhatsApp":"Send to the team group on WhatsApp"):(urgent?"Alert the team on WhatsApp":"Send to the team on WhatsApp");
+    $("#waAlertText").innerHTML=(urgent
       ? "<strong>This is marked urgent.</strong> Your report is saved and the team has been emailed. Tap below to alert them on WhatsApp too."
-      : "Your report is saved and the team has been emailed. You can also let them know on WhatsApp.";
+      : "Your report is saved and the team has been emailed. You can also let them know on WhatsApp.")+(toGroup?" WhatsApp will ask which chat to use: choose the team group.":"");
   }
   $("#waAlert").hidden=false;
   // Show the reporter the photos they sent, and a link they can keep (not for confidential reports).
@@ -876,7 +887,9 @@ function renderSheet(){
   const si=STATUSES.indexOf(c.status);
   s.append(el("div",{class:"head"},el("div",{},el("div",{class:"ref",text:c.ref}),el("h2",{text:c.title})),el("div",{class:"row"},pills(c),c.restricted?el("span",{class:"pill restricted",text:"Restricted"}):null,c.example?el("span",{class:"pill ex",text:"Example"}):null)));
   s.append(el("div",{class:"steps","aria-label":"Progress"},STATUSES.map((st,i)=>el("span",{class:i===si?"on":i<si?"past":"",text:st}))));
-  if(c.restricted)s.append(el("div",{class:"notice",text:"Restricted case: only its designated handler can see it. Do not discuss it outside that role."}));
+  if(c.restricted)s.append(el("div",{class:"notice",text:"Restricted case: only its designated handler can see it. Do not discuss it outside that role or share it in WhatsApp groups."}));
+  else s.append(el("div",{class:"waalert"},el("p",{class:"hint",text:"Share this case with the team group. WhatsApp opens with the summary written; choose the group and press send. Guest contact details are not included."}),
+    el("a",{class:"wabtn",href:waGroupLink(caseWaText(c)),target:"_blank",rel:"noopener"},"Alert the team group on WhatsApp")));
   const kv=el("dl",{class:"kv"});
   const add=(k,v)=>{if(v===undefined||v===null||v==="")return;kv.append(el("dt",{text:k}),el("dd",{text:v}))};
   add("Category",cat.name+(cat.crit?"  (Travelife "+cat.crit+")":""));
