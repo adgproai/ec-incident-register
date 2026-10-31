@@ -983,6 +983,8 @@ async function submitReport(e){
   $("#doneRef").textContent=ref;
   const cd=CAT[cat];
   $("#doneWhen").textContent=cd.ack===0?"Someone will look at it today.":"We'll acknowledge it within "+cd.ack+" working day"+(cd.ack>1?"s":"")+" and aim to resolve it within "+cd.resolve+" days.";
+  // The alert function emails a confirmation when the reporter gave an email address and consent (not anonymous).
+  if(!anon&&email&&contact.consent&&!demo) $("#doneWhen").textContent+=" We've emailed a confirmation with your reference to "+email+".";
   $("#reportForm").hidden=true;$("#doneBox").hidden=false;$("#doneBox").scrollIntoView({block:"center"});
 }
 

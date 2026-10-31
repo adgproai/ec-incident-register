@@ -6,6 +6,9 @@
 //   (not for confidential cases, whose photos stay in the register).
 // - WhatsApp to NOTIFY_WHATSAPP_TO for urgent cases only (Meta WhatsApp Cloud API, approved template).
 //   Urgent = severity High or Critical, or category injury, emergency or safeguarding.
+// - Confirmation email to the reporter, when they gave an email address and consent (never for anonymous
+//   reports). Confidential reports get a minimal confirmation: reference and response times only.
+//   Replies go to the team inbox. The team alert's Reply-To is the reporter, for ordinary reports.
 // - Restricted cases (safeguarding, grievance, ethics) never carry details in email or WhatsApp.
 // - The result is written to the case log, so the register shows who was alerted.
 //
@@ -37,6 +40,15 @@ const CATEGORY: Record<string, string> = {
   safeguarding: "Child protection or exploitation", grievance: "Staff grievance", ethics: "Ethics or whistleblowing",
 };
 const URGENT_CATEGORIES = ["injury", "emergency", "safeguarding"];
+// Response times shown to the reporter; must match CATS in index.html. ack 0 = same day.
+const TIMES: Record<string, { ack: number; resolve: number }> = {
+  complaint: { ack: 2, resolve: 14 }, compliment: { ack: 5, resolve: 30 }, injury: { ack: 0, resolve: 14 },
+  nearmiss: { ack: 2, resolve: 30 }, emergency: { ack: 0, resolve: 7 }, supplier: { ack: 2, resolve: 30 },
+  safeguarding: { ack: 0, resolve: 7 }, grievance: { ack: 5, resolve: 30 }, ethics: { ack: 5, resolve: 30 },
+};
+const SITE_URL = "https://reports.experiencescaribbean.com/";
+const HELP_PHONE = "+1 (767) 616-5827";
+const EMAIL_RE = /^[^\s<>@,]+@[^\s<>@,]+\.[a-z]{2,}$/i;
 
 const env = (k: string) => (Deno.env.get(k) || "").trim();
 const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
@@ -55,12 +67,16 @@ Deno.serve(async (req) => {
   const { data: claimed, error: claimErr } = await db.from("cases")
     .update({ notified_at: new Date().toISOString() })
     .eq("id", caseId).is("notified_at", null).gte("received_at", since)
-    .select("id, ref, category, severity, status, reporter_type, channel, anonymous, restricted, title, description, place, tour, occurred_at, received_at, extras, log");
+    .select("id, ref, category, severity, status, reporter_type, channel, anonymous, restricted, title, description, place, tour, occurred_at, received_at, extras, contact, log");
   if (claimErr) return json(500, { error: claimErr.message });
   if (!claimed || !claimed.length) return json(200, { skipped: "unknown, old or already alerted" });
   const c = claimed[0];
 
   const urgent = c.severity === "High" || c.severity === "Critical" || URGENT_CATEGORIES.includes(c.category);
+  const contact = (c.contact || {}) as Record<string, unknown>;
+  const reporterEmail = String(contact.email || "").trim();
+  const reporterName = String(contact.name || "").replace(/[<>"\r\n]/g, "").trim().slice(0, 80);
+  const canEmailReporter = !c.anonymous && contact.consent === true && EMAIL_RE.test(reporterEmail);
   const cat = CATEGORY[c.category] || c.category;
   const results: string[] = [];
   const { data: photoRows } = await db.from("case_photos").select("path").eq("case_id", c.id).order("path");
@@ -115,12 +131,52 @@ Deno.serve(async (req) => {
       const r = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: emailFrom, to: emailTo.split(",").map((s) => s.trim()).filter(Boolean), subject, html, ...(attachments.length ? { attachments } : {}) }),
+        body: JSON.stringify({ from: emailFrom, to: emailTo.split(",").map((s) => s.trim()).filter(Boolean), subject, html,
+          ...(canEmailReporter && !c.restricted ? { reply_to: reporterName ? `${reporterName} <${reporterEmail}>` : reporterEmail } : {}),
+          ...(attachments.length ? { attachments } : {}) }),
       });
       results.push(r.ok ? `Alert emailed to ${emailTo}${attachments.length ? ` with ${attachments.length} photo${attachments.length > 1 ? "s" : ""}` : ""}` : `Alert email failed (${r.status}): ${(await r.text()).slice(0, 200)}`);
     } catch (e) { results.push(`Alert email failed: ${String(e).slice(0, 200)}`); }
   } else {
     results.push("Alert email not sent: email is not set up yet");
+  }
+
+  // ---------- confirmation to the reporter ----------
+  if (canEmailReporter && emailFrom && resendKey) {
+    const t = TIMES[c.category] || { ack: 2, resolve: 30 };
+    const ackText = t.ack === 0 ? "today" : `within ${t.ack} working day${t.ack > 1 ? "s" : ""}`;
+    const hello = reporterName ? `Dear ${esc(reporterName)},` : "Hello,";
+    const folder = !c.restricted && (photoRows || []).length ? String(photoRows![0].path).split("/")[1] : "";
+    const sent = c.restricted ? "" : `
+        <p style="margin:18px 0 6px"><strong>What you sent us</strong></p>
+        <table style="border-collapse:collapse;font-size:14px">
+          <tr><td style="padding:3px 12px 3px 0;color:#6b645c">Topic</td><td>${esc(cat)}</td></tr>
+          <tr><td style="padding:3px 12px 3px 0;color:#6b645c">Summary</td><td>${esc(c.title)}</td></tr>
+          ${c.place ? `<tr><td style="padding:3px 12px 3px 0;color:#6b645c">Where</td><td>${esc(c.place)}</td></tr>` : ""}
+          ${c.tour ? `<tr><td style="padding:3px 12px 3px 0;color:#6b645c">Tour or booking</td><td>${esc(c.tour)}</td></tr>` : ""}
+          ${nPhotos ? `<tr><td style="padding:3px 12px 3px 0;color:#6b645c">Photos</td><td>${nPhotos}${folder ? ` · <a href="${SITE_URL}#photos=${esc(folder)}">view them</a> (link works for 30 days)` : ""}</td></tr>` : ""}
+        </table>
+        <p style="white-space:pre-wrap;border-left:3px solid #04869d;padding-left:10px;color:#444">${esc(c.description)}</p>`;
+    const html = `<div style="font-family:Arial,sans-serif;color:#2b2723;max-width:600px;line-height:1.5">
+        <p>${hello}</p>
+        <p>Thank you for telling us. We've received your ${c.restricted ? "confidential " : ""}report and a member of our team will follow it up.</p>
+        <p style="font-size:18px;margin:16px 0"><strong>Your reference: ${esc(c.ref)}</strong></p>
+        <p>We will acknowledge it <strong>${ackText}</strong> and aim to resolve it <strong>within ${t.resolve} days</strong>.</p>
+        ${c.restricted ? "<p>This report is confidential. Only the person responsible for this kind of report can see it.</p>" : ""}
+        ${sent}
+        <p>To add anything, reply to this email and keep the reference in the subject.</p>
+        <p style="font-size:13px;color:#6b645c;border-top:1px solid #ddd;padding-top:10px">In an emergency call <strong>911</strong>. For help during a tour, call or WhatsApp us on <strong>${HELP_PHONE}</strong>.<br>
+        Experiences Caribbean · Your details are used only to handle your report.</p>
+      </div>`;
+    try {
+      const r = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: emailFrom, to: [reporterEmail], reply_to: TEAM_EMAIL.split(",")[0].trim(),
+          subject: `We've received your report ${c.ref}`, html }),
+      });
+      results.push(r.ok ? "Confirmation emailed to the reporter" : `Confirmation email to the reporter failed (${r.status}): ${(await r.text()).slice(0, 200)}`);
+    } catch (e) { results.push(`Confirmation email to the reporter failed: ${String(e).slice(0, 200)}`); }
   }
 
   // ---------- WhatsApp (urgent cases only) ----------
