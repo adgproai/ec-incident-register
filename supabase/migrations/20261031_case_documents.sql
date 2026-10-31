@@ -1,0 +1,7 @@
+-- Applied to Supabase project TravelLife on 31 Oct 2026 (migrations case_documents, case_documents_no_update).
+-- Staff-only documents attached to cases. Same visibility as the case (private.can_see_category);
+-- only admins can remove; uploads/removals are written to the case log by the database.
+-- Bucket: case-files (private, 20 MB per file; PDF, Office, OpenDocument, RTF, text, CSV, email, images).
+-- Table: public.case_files (case_id, path, name, size_bytes, mime, uploaded_by, uploaded_by_name, uploaded_at).
+-- Storage path: cases/<case id>/<random>-<file name>.
+-- See the Supabase dashboard (Database > Migrations) for the exact SQL as applied.

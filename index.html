@@ -118,6 +118,16 @@ legend{font:700 13px var(--f-body);text-transform:uppercase;letter-spacing:.06em
 .waalert{border-top:1px solid var(--line);margin:4px 0 14px;padding-top:12px}
 .whonote{margin:-2px 0 4px;font-size:13.5px;color:var(--muted)}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* Case documents (staff only, in the case register) */
+.docs{display:flex;flex-direction:column;gap:8px}
+.docs h3{margin:0}
+.doclist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.doclist li{display:flex;align-items:center;gap:4px 12px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.doclist .dname{font-weight:700;overflow-wrap:anywhere;min-width:0}
+.doclist .meta{color:var(--muted);font-size:12.5px}
+.doclist .linkbtn{margin-left:auto}
+.doclist .linkbtn.danger{color:var(--crit)}
+.docs .empty{padding:4px 0;text-align:left}
 .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin-bottom:4px}
 .photos:empty{display:none}
 .ph{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;border:1px solid var(--line);background:var(--sunk)}
@@ -670,6 +680,85 @@ function errText(e){const m=(e&&(e.message||e.error_description))||"";return m.r
 function isStaffUI(){return demo || !!staff}
 function isAdmin(){return demo || !!(staff&&(staff.roles||[]).includes("admin"))}
 
+// ---------- case documents (staff only; shown only inside the case register) ----------
+// Stored in the private "case-files" bucket at cases/<case id>/<random>-<name>, listed in table case_files.
+// Same visibility as the case itself (confidential cases: their handler only). Only admins can remove one.
+// The database writes "Document added/removed" to the case log.
+const DOC_TYPES={pdf:"application/pdf",doc:"application/msword",docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xls:"application/vnd.ms-excel",xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ppt:"application/vnd.ms-powerpoint",pptx:"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  odt:"application/vnd.oasis.opendocument.text",ods:"application/vnd.oasis.opendocument.spreadsheet",rtf:"application/rtf",
+  txt:"text/plain",csv:"text/csv",eml:"message/rfc822",msg:"application/vnd.ms-outlook",
+  jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",gif:"image/gif",heic:"image/heic",heif:"image/heif"};
+const DOC_MAX=20*1024*1024;
+const fmtSize=b=>!b?"":b>=1048576?(b/1048576).toFixed(1)+" MB":Math.max(1,Math.round(b/1024))+" KB";
+const docExt=n=>(String(n).toLowerCase().match(/\.([a-z0-9]+)$/)||[])[1]||"";
+const safeName=n=>String(n).replace(/[^A-Za-z0-9._-]+/g,"_").replace(/^_+|_+$/g,"").slice(-100)||"file";
+function docSection(c){
+  const wrap=el("section",{class:"docs","aria-label":"Documents"},el("h3",{text:"Documents"}));
+  const list=el("ul",{class:"doclist"}), msg=el("span",{class:"hint",role:"status"});
+  const input=el("input",{type:"file",id:"doc-input",class:"vh",multiple:true,accept:Object.keys(DOC_TYPES).map(e=>"."+e).join(",")});
+  wrap.append(list,
+    el("div",{class:"row"},el("label",{class:"btn ghost small",for:"doc-input"},"Add documents"),input,msg),
+    el("p",{class:"hint",text:"Staff only: guests never see these. PDF, Word, Excel, PowerPoint, text, email or image files, up to 20 MB each."+(isAdmin()?"":" Only an admin can remove a document.")}));
+  const render=async()=>{
+    let rows=[];
+    if(demo||c.example){rows=(c.files||[])}
+    else{
+      const {data,error}=await sb.from("case_files").select("id,path,name,size_bytes,uploaded_by_name,uploaded_at").eq("case_id",c.id).order("uploaded_at");
+      if(error){list.replaceChildren(el("li",{class:"empty",text:"Documents couldn't be loaded. "+errText(error)}));return}
+      rows=await Promise.all((data||[]).map(async r=>{
+        const {data:u}=await sb.storage.from("case-files").createSignedUrl(r.path,3600,{download:r.name});
+        return {id:r.id,path:r.path,name:r.name,size:r.size_bytes,by:r.uploaded_by_name,at:Date.parse(r.uploaded_at),url:u&&u.signedUrl};
+      }));
+    }
+    if(selected!==c.id)return;
+    if(!rows.length){list.replaceChildren(el("li",{class:"empty",text:"No documents yet."}));return}
+    list.replaceChildren(...rows.map(r=>{
+      const li=el("li",{},
+        r.url?el("a",{class:"dname",href:r.url,target:"_blank",rel:"noopener"},r.name):el("span",{class:"dname",text:r.name}),
+        el("span",{class:"meta",text:[fmtSize(r.size),r.by,r.at?fmtD(r.at):""].filter(Boolean).join(" · ")}));
+      if(isAdmin()){
+        const rm=el("button",{type:"button",class:"linkbtn"},"Remove");
+        let armed=false,t=null;
+        rm.addEventListener("click",async()=>{
+          if(!armed){armed=true;rm.textContent="Tap again to remove";rm.classList.add("danger");t=setTimeout(()=>{armed=false;rm.textContent="Remove";rm.classList.remove("danger")},4000);return}
+          clearTimeout(t); rm.disabled=true; msg.textContent="Removing…";
+          if(demo||c.example){c.files=(c.files||[]).filter(x=>x!==r);(c.log=c.log||[]).push({at:Date.now(),note:"Document removed: "+r.name,by:"Demo user"});msg.textContent="";renderAll();return}
+          const {error}=await sb.from("case_files").delete().eq("id",r.id);
+          if(error){rm.disabled=false;msg.textContent=errText(error);return}
+          await sb.storage.from("case-files").remove([r.path]);
+          msg.textContent=""; toast("Removed "+r.name); await loadData();
+        });
+        li.append(rm);
+      }
+      return li;
+    }));
+  };
+  input.addEventListener("change",async()=>{
+    const files=[...input.files]; input.value=""; if(!files.length)return;
+    const bad=files.filter(f=>!DOC_TYPES[docExt(f.name)]), big=files.filter(f=>f.size>DOC_MAX);
+    if(bad.length){msg.textContent=bad[0].name+" isn't a supported file type. Use PDF, Word, Excel, PowerPoint, text, email or image files.";return}
+    if(big.length){msg.textContent=big[0].name+" is larger than 20 MB.";return}
+    let done=0;
+    for(const f of files){
+      msg.textContent="Uploading "+(done+1)+" of "+files.length+"…";
+      const mime=DOC_TYPES[docExt(f.name)];
+      if(demo||c.example){(c.files=c.files||[]).push({name:f.name,size:f.size,by:"Demo user",at:Date.now(),url:URL.createObjectURL(f)});(c.log=c.log||[]).push({at:Date.now(),note:"Document added: "+f.name,by:"Demo user"});done++;continue}
+      const path="cases/"+c.id+"/"+crypto.randomUUID()+"-"+safeName(f.name);
+      const up=await sb.storage.from("case-files").upload(path,f,{contentType:mime,upsert:false});
+      if(up.error){msg.textContent=f.name+" didn't upload: "+errText(up.error);break}
+      const {error}=await sb.from("case_files").insert({case_id:c.id,path,name:f.name.slice(0,200),size_bytes:f.size,mime});
+      if(error){await sb.storage.from("case-files").remove([path]);msg.textContent=f.name+" didn't save: "+errText(error);break}
+      done++;
+    }
+    if(done){toast(done===1?"Document added":done+" documents added"); if(done===files.length)msg.textContent="";}
+    if(demo||c.example)renderAll(); else await loadData();
+  });
+  render();
+  return wrap;
+}
+
 // ---------- database rows <-> page objects ----------
 function fromRow(r){
   return {id:r.id, ref:r.ref, category:r.category, severity:r.severity, status:r.status, reporterType:r.reporter_type, channel:r.channel,
@@ -967,6 +1056,7 @@ function renderSheet(){
   add("Supplier",[x.supplier,x.stype].filter(Boolean).join(" · "));
   s.append(kv, el("p",{style:"margin:0;white-space:pre-wrap",text:c.description}));
   const pbox=el("div",{class:"casephotos"}); s.append(pbox); loadCasePhotos(c,pbox);
+  s.append(docSection(c));
 
   const f=el("form",{class:"stack",novalidate:true});
   const sel=(id,label,opts,val)=>el("div",{class:"field"},el("label",{for:id,text:label}),el("select",{id},opts.map(o=>el("option",{value:o,selected:o===val,text:o||"Choose…"}))));
