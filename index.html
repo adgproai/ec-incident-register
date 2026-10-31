@@ -811,7 +811,8 @@ async function submitReport(e){
     const lines=cd0.restricted
       ? [(urgent?"URGENT confidential":"New confidential")+" report submitted (ref "+ref+").","Please check your email."]
       : [(urgent?"URGENT report":"New report")+" (ref "+ref+")","What: "+cd0.name+" · "+sev,"Summary: "+title,place&&("Where: "+place),tour&&("Tour/booking: "+tour),nPhotos&&(lastFolder&&!demo?"Photos ("+nPhotos+"): "+photoLink(lastFolder):"Photos: "+nPhotos+" (in the register)"),"Full details are in the email to the team."].filter(Boolean);
-    const toGroup=role==="staff"&&!cd0.restricted;
+    // Staff (the "I'm staff" toggle, or anyone signed in as staff) pick the team group; guests go 1:1 to the company number.
+    const toGroup=(role==="staff"||!!staff)&&!cd0.restricted;
     $("#waAlertBtn").href=(toGroup?waGroupLink:waCompanyLink)(lines.join("\n"));
     $("#waAlertBtn").textContent=toGroup?(urgent?"Alert the team group on WhatsApp":"Send to the team group on WhatsApp"):(urgent?"Alert the team on WhatsApp":"Send to the team on WhatsApp");
     $("#waAlertText").innerHTML=(urgent
