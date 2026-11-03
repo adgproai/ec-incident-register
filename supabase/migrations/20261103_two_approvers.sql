@@ -1,0 +1,11 @@
+-- Applied 3 Nov 2026 (UTC) to project krlsgdqkfxgtivrjndcq as migrations "approval_two_approvers" and
+-- "approval_other_approvers_helper". Summary:
+--  * At most two active approvers (trigger private.check_approver_limit on staff and staff_invites; old one-approver indexes dropped).
+--  * public.set_approver(email, on): admins and approvers can give or remove the Approver role only.
+--  * public.admin_list_staff: admins and approvers. public.staff_directory(): active names and roles for staff (owner suggestions).
+--  * public.current_approver(): names of the approvers ("A and B").
+--  * cases: approval_requested_by / _name / _at, approval_notify (pending email event, set by the trigger only).
+--  * private.cases_before_update: submitting needs root cause + action and records the submitter; while two approvers exist an
+--    approver can close only a case in "Awaiting approval" that they did not submit and do not own (private.other_approvers()).
+--  * private.alert_approval (after update) calls the notify-approval function: "submitted" emails the approvers,
+--    "sent_back" (by an approver) emails the submitter and the case owner (if the owner matches a team member's name or email).

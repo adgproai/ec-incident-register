@@ -336,7 +336,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
         <span class="sep" data-staff hidden></span>
         <button role="tab" id="tab-register" aria-selected="false" data-view="register" data-staff hidden>Case register</button>
         <button role="tab" id="tab-dashboard" aria-selected="false" data-view="dashboard" data-staff hidden>Dashboard</button>
-        <button role="tab" id="tab-team" aria-selected="false" data-view="team" data-admin hidden>Team</button>
+        <button role="tab" id="tab-team" aria-selected="false" data-view="team" data-team hidden>Team</button>
         <button role="tab" id="tab-signin" aria-selected="false" data-view="signin">Staff sign in</button>
         <button type="button" id="signout" class="btn ghost small" hidden>Sign out</button>
       </nav>
@@ -538,6 +538,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
 </section>
 
 <!-- TEAM (admins only) -->
+<datalist id="ownerNames"></datalist>
 <section id="view-team" class="stack" hidden>
   <div><h1>Team</h1>
   <p class="lede">Everyone who can sign in to the case register. Each person signs in with their own work email, so the reports they file and the cases they update carry their name. People are never deleted, so their past reports keep their name: switch them off when they leave.</p></div>
@@ -553,11 +554,12 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
         <label class="check"><input type="checkbox" id="tm-admin"> <span><b>Admin</b> <span class="hint">— adds people, changes their access, switches them off</span></span></label>
         <label class="check"><input type="checkbox" id="tm-safe"> <span><b>Safeguarding lead</b> <span class="hint">— sees child protection reports</span></span></label>
         <label class="check"><input type="checkbox" id="tm-hr"> <span><b>HR and ethics</b> <span class="hint">— sees staff grievance and whistleblowing reports</span></span></label>
-        <label class="check"><input type="checkbox" id="tm-appr"> <span><b>Approver</b> <span class="hint">— approves and closes cases, sees every case; only one person can hold this</span></span></label>
+        <label class="check"><input type="checkbox" id="tm-appr"> <span><b>Approver</b> <span class="hint">— approves and closes cases, sees every case; keep exactly two approvers</span></span></label>
       </div>
     </fieldset>
     <div class="row"><button class="btn" type="submit" id="tm-save">Add to team</button><button class="btn ghost small" type="button" id="tm-cancel" hidden>Cancel</button><span class="hint" id="tmMsg" role="status"></span></div>
   </form>
+  <div id="apprNote" class="waitnote" hidden></div>
   <div class="members" id="teamList" aria-label="Team members"><div class="empty">Loading…</div></div>
 </section>
 </main>
@@ -573,7 +575,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
   <button type="button" data-view="survey"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1Z"/></svg><span>Survey</span></button>
   <button type="button" data-view="register" data-staff hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Cases</span></button>
   <button type="button" data-view="dashboard" data-staff hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Dashboard</span></button>
-  <button type="button" data-view="team" data-admin hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18.5 14.5a6.5 6.5 0 0 1 3 5.5"/></svg><span>Team</span></button>
+  <button type="button" data-view="team" data-team hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18.5 14.5a6.5 6.5 0 0 1 3 5.5"/></svg><span>Team</span></button>
   <button type="button" data-view="signin" id="bn-signin"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Staff</span></button>
 </nav>
 <div class="toast" id="toast" hidden role="status"></div>
@@ -822,9 +824,18 @@ function errText(e){const m=(e&&(e.message||e.error_description))||"";return m.r
 function isStaffUI(){return demo || !!staff}
 function isAdmin(){return demo || !!(staff&&(staff.roles||[]).includes("admin"))}
 // Approval: only the approver closes (or reopens) cases. With no approver assigned, admins may close.
-let approverName=null;
+let approverName=null, approvers=[], directory=[], deepCaseDone=false;
 function isApprover(){return demo || !!(staff&&(staff.roles||[]).includes("approver"))}
 function canClose(){return isApprover() || (isAdmin() && !approverName)}
+const sameName=(a,b)=>!!a&&!!b&&String(a).trim().toLowerCase()===String(b).trim().toLowerCase();
+// an approver may not approve a case they submitted or own while a second approver exists
+function selfBlocked(c){return !demo&&isApprover()&&approvers.length>1&&!!staff&&((c.approvalRequestedBy&&c.approvalRequestedBy===staff.user_id)||sameName(c.owner,staff.full_name))}
+function otherApprover(){return approvers.filter(n=>!staff||!sameName(n,staff.full_name)).join(" and ")||"the other approver"}
+function canCloseCase(c){
+  if(!canClose())return false;
+  if(isApprover()&&approvers.length>1&&!demo)return c.status==="Awaiting approval"&&!selfBlocked(c);
+  return true;
+}
 
 // ---------- case documents (staff only; shown only inside the case register) ----------
 // Stored in the private "case-files" bucket at cases/<case id>/<random>-<name>, listed in table case_files.
@@ -913,7 +924,7 @@ function fromRow(r){
     loggedByName:r.logged_by_name, contact:r.contact||{}, extras:r.extras||{}, owner:r.owner, rootCause:r.root_cause, findings:r.findings, action:r.action,
     actionDue:dayMs(r.action_due), actionDone:dayMs(r.action_done), effective:r.effective, responseSent:r.response_sent,
     checklist:(r.checklist&&typeof r.checklist==="object")?r.checklist:{},
-    approvedByName:r.approved_by_name, approvedAt:ms(r.approved_at),
+    approvedByName:r.approved_by_name, approvedAt:ms(r.approved_at), approvalRequestedBy:r.approval_requested_by, approvalRequestedByName:r.approval_requested_by_name, approvalRequestedAt:ms(r.approval_requested_at),
     log:(r.log||[]).map(l=>({at:ms(l.at), note:l.note, by:l.by}))};
 }
 function surveyFromRow(r){return {id:r.id, at:ms(r.submitted_at), tour:r.tour, scores:r.scores||{}, sustain:r.sustain||{}, comment:r.comment}}
@@ -1138,9 +1149,13 @@ async function submitReport(e){
 
 // ---------- loading (live) ----------
 async function loadData(){
-  if(demo){approverName="Demo approver";return}
+  if(demo){approvers=["Demo approver"];approverName=approvers[0];return}
   if(!staff)return;
-  sb.rpc("current_approver").then(({data})=>{approverName=data||null}).catch(()=>{});
+  sb.rpc("staff_directory").then(({data})=>{
+    directory=data||[]; approvers=directory.filter(d=>(d.roles||[]).includes("approver")).map(d=>d.full_name);
+    approverName=approvers.length?approvers.join(" and "):null;
+    const dl=$("#ownerNames"); if(dl)dl.replaceChildren(...directory.map(d=>el("option",{value:d.full_name})));
+  }).catch(()=>{});
   const since=+$("#period").value?new Date(Date.now()-$("#period").value*DAY).toISOString():null;
   const [c,s,k]=await Promise.all([
     sb.from("cases").select("*").order("received_at",{ascending:false}).limit(2000),
@@ -1151,6 +1166,7 @@ async function loadData(){
   cases=(c.data||[]).map(fromRow);
   surveys=s.error?[]:(s.data||[]).map(surveyFromRow);
   counts=k.error?null:(k.data||[]);
+  if(!deepCaseDone&&qs.get("case")){deepCaseDone=true; const m=cases.find(x=>x.ref===qs.get("case")); if(m){selected=m.id; if(phone())$("#reg").classList.add("detail")}}
   if(!cases.some(x=>x.id===selected))selected=cases.length?cases[0].id:null;
   renderAll();
 }
@@ -1173,7 +1189,7 @@ function pills(c){
 function renderList(){
   const list=$("#list"), rows=filtered(); list.replaceChildren();
   const bn=$("#apprBanner"); if(bn){
-    const waiting=cases.filter(c=>c.status==="Awaiting approval").length;
+    const waiting=cases.filter(c=>c.status==="Awaiting approval"&&!selfBlocked(c)).length;
     bn.hidden=!(isApprover()&&waiting); bn.replaceChildren();
     if(!bn.hidden) bn.append(el("span",{text:waiting+" case"+(waiting>1?"s":"")+" awaiting your approval"}),
       el("button",{type:"button",class:"btn small",onclick:()=>{$("#fStatus").value="Awaiting approval";renderList();$("#list").scrollIntoView({block:"start"})}},"Show them"));
@@ -1198,7 +1214,9 @@ function renderSheet(){
   s.append(el("div",{class:"head"},el("div",{},el("div",{class:"ref",text:c.ref}),el("h2",{text:c.title})),el("div",{class:"row"},pills(c),c.restricted?el("span",{class:"pill restricted",text:"Restricted"}):null,c.example?el("span",{class:"pill ex",text:"Example"}):null)));
   s.append(el("div",{class:"steps","aria-label":"Progress"},STATUSES.map((st,i)=>el("span",{class:i===si?"on":i<si?"past":"",text:st}))));
   if(c.status==="Awaiting approval"){
-    if(isApprover()){
+    if(isApprover()&&selfBlocked(c)){
+      s.append(el("div",{class:"waitnote",text:"Awaiting approval. You "+(c.approvalRequestedBy===staff.user_id?"submitted this case":"are the owner of this case")+", so "+otherApprover()+" must approve it. They have been emailed."}));
+    } else if(isApprover()){
       const reason=el("textarea",{id:"appr-reason",maxlength:"2000",placeholder:"What still needs doing (needed to send it back)"});
       const pm=el("p",{class:"hint",id:"apprMsg",role:"status"});
       const form=()=>$("#sheet form");
@@ -1213,7 +1231,7 @@ function renderSheet(){
         el("label",{for:"appr-reason",class:"lbl",text:"Not ready? Send it back with a reason"}),reason,
         el("div",{class:"row"},el("button",{type:"button",class:"btn ghost small",id:"sendBackBtn",onclick:doBack},"Send back")),pm));
     } else {
-      s.append(el("div",{class:"waitnote",text:"Awaiting approval"+(approverName?" by "+approverName:"")+". Only the approver can close this case; you can still add notes and documents."}));
+      s.append(el("div",{class:"waitnote",text:"Awaiting approval"+(approverName?" by "+approverName:"")+(c.approvalRequestedByName?" (submitted by "+c.approvalRequestedByName+")":"")+". Only an approver can close this case; you can still add notes and documents."}));
     }
   }
   if(c.restricted)s.append(el("div",{class:"notice",text:"Restricted case: only its designated handler can see it. Do not discuss it outside that role or share it in WhatsApp groups."}));
@@ -1225,6 +1243,7 @@ function renderSheet(){
   add("Reported by",(c.anonymous?"Anonymous ":"")+(c.reporterType==="staff"?"staff / guide":"guest / visitor")+" · "+(c.channel||""));
   add("Filed by",c.loggedByName);
   add("Happened",fmt(c.occurredAt)); add("Received",fmt(c.receivedAt)); add("Due to close",fmtD(dueFor(c)));
+  if(c.approvalRequestedByName&&c.status!=="Closed")add("Submitted for approval",c.approvalRequestedByName+(c.approvalRequestedAt?" · "+fmt(c.approvalRequestedAt):""));
   if(c.approvedByName)add("Approved by",c.approvedByName+(c.approvedAt?" · "+fmt(c.approvedAt):""));
   add("Where",c.place); add("Tour",c.tour);
   if(c.contact&&(c.contact.name||c.contact.email||c.contact.phone))add("Contact",[c.contact.name,c.contact.email,c.contact.phone,c.contact.lang].filter(Boolean).join(" · "));
@@ -1242,7 +1261,7 @@ function renderSheet(){
   const inp=(id,label,val,type="text")=>el("div",{class:"field"},el("label",{for:id,text:label}),el("input",{type,id,value:val||""}));
   const ta=(id,label,val)=>el("div",{class:"field full"},el("label",{for:id,text:label}),el("textarea",{id},val||""));
   f.append(el("fieldset",{},el("legend",{text:"Handling"}),el("div",{class:"grid2"},
-    sel("h-status","Status",STATUSES.filter(st=>st!=="Closed"||canClose()||c.status==="Closed"),c.status), inp("h-owner","Case owner",c.owner),
+    sel("h-status","Status",STATUSES.filter(st=>st!=="Closed"||canCloseCase(c)||c.status==="Closed"),c.status), inp("h-owner","Case owner",c.owner),
     sel("h-sev","Severity",["Low","Medium","High","Critical"],c.severity),
     sel("h-cause","Root cause (1.19)",[""].concat(CAUSES),c.rootCause||""),
     ta("h-find","Findings",c.findings))));
@@ -1265,11 +1284,12 @@ function renderSheet(){
     el("label",{class:"check"},el("input",{type:"checkbox",id:"h-resp",checked:!!c.responseSent})," Reply sent to the reporter"),
     ta("h-note","Add a note to the case log",""))));
   setTimeout(()=>["h-find","h-action","h-note"].forEach(attachMic));
+  {const ho=f.querySelector("#h-owner"); if(ho){ho.setAttribute("list","ownerNames"); ho.setAttribute("autocomplete","off");}}
   if(c.status==="Closed"&&!canClose()){const hs=f.querySelector("#h-status"); if(hs){hs.disabled=true; hs.title="Only the approver can reopen a closed case";}}
   const saveBtn=el("button",{class:"btn",type:"submit"},"Save changes");
   const fm=el("span",{class:"hint",role:"status"});
   const canSubmitAppr=c.status!=="Awaiting approval"&&c.status!=="Closed";
-  const apprBtn=canSubmitAppr?el("button",{type:"button",class:"btn submitappr",id:"submitApprBtn",title:"Flags the case as waiting to be approved by "+(approverName||"the approver"),onclick:()=>{f.dataset.submitAppr="1";f.requestSubmit();}},"Submit for approval"):null;
+  const apprBtn=canSubmitAppr?el("button",{type:"button",class:"btn submitappr",id:"submitApprBtn",title:"Flags the case as waiting to be approved and emails "+(approverName||"the approvers"),onclick:()=>{f.dataset.submitAppr="1";f.requestSubmit();}},"Submit for approval"):null;
   f.append(el("div",{class:"row"},saveBtn,apprBtn,fm));
   f.addEventListener("submit",async ev=>{
     ev.preventDefault();
@@ -1278,7 +1298,8 @@ function renderSheet(){
     const say=t=>{fm.textContent=t; const pm=$("#apprMsg"); if(pm)pm.textContent=t;};
     const v={status:submitAppr?"Awaiting approval":g("h-status").value,owner:g("h-owner").value.trim(),severity:g("h-sev").value,rootCause:g("h-cause").value,findings:g("h-find").value.trim(),
       action:g("h-action").value.trim(),actionDue:g("h-adue").value||null,actionDone:g("h-adone").value||null,effective:g("h-eff").checked,responseSent:g("h-resp").checked};
-    if(v.status==="Closed"&&c.status!=="Closed"&&!canClose()){say("Only the approver"+(approverName?", "+approverName+",":"")+" can close a case. Set it to Awaiting approval instead.");return}
+    if(v.status==="Closed"&&c.status!=="Closed"&&!canCloseCase(c)){say(selfBlocked(c)?"You submitted or own this case, so "+otherApprover()+" must approve it."
+      :isApprover()?"Submit the case for approval first; "+otherApprover()+" approves it.":"Only an approver"+(approverName?" ("+approverName+")":"")+" can close a case. Tap Submit for approval instead.");return}
     if(v.status==="Awaiting approval"&&c.status!=="Awaiting approval"&&(!v.rootCause||!v.action)){say("Add a root cause and a corrective action before sending the case for approval.");return}
     if(v.status==="Closed"&&(!v.rootCause||!v.action)){say("Add a root cause and a corrective action before closing (criterion 1.19).");return}
     if(v.status==="Closed"&&!c.anonymous&&!v.responseSent&&(c.contact||{}).email){say("Tick 'Reply sent' before closing a case with a contactable reporter.");return}
@@ -1297,6 +1318,7 @@ function renderSheet(){
       return;
     }
     if(c.status!==v.status)log.push({at:now,note:"Status: "+c.status+" → "+v.status,by});
+    if(v.status==="Awaiting approval"&&c.status!=="Awaiting approval")log.push({at:now,note:"Submitted for approval",by});
     if(v.status==="Closed"&&c.status!=="Closed")log.push({at:now,note:isApprover()?"Approved and closed by the approver":"Closed by an admin (no approver assigned)",by});
     if(c.owner!==v.owner&&v.owner)log.push({at:now,note:"Owner: "+v.owner,by});
     const note=g("h-note").value.trim(); if(note)log.push({at:now,note,by});
@@ -1311,10 +1333,12 @@ function renderSheet(){
       if(error){say(errText(error));return}
       toast("Case "+c.ref+(submitAppr?" submitted for approval":" saved")); await loadData();
     } else {
+      const prevStatus=c.status;
       Object.assign(c,v,{actionDue:dayMs(v.actionDue),actionDone:dayMs(v.actionDone),log:trimmed,checklist:nextCk});
       if(v.status!=="New"&&!c.acknowledgedAt)c.acknowledgedAt=now;
       c.closedAt=v.status==="Closed"?(c.closedAt||now):null;
       if(v.status==="Closed"&&!c.approvedByName){c.approvedByName=by;c.approvedAt=now}
+      if(v.status==="Awaiting approval"&&prevStatus!=="Awaiting approval"){c.approvalRequestedByName=by;c.approvalRequestedAt=now}
       saveBtn.disabled=false; toast("Case "+c.ref+(submitAppr?" submitted for approval":" saved")); renderAll();
     }
   });
@@ -1337,7 +1361,9 @@ function renderDash(){
   const days=closed.map(c=>(c.closedAt-c.receivedAt)/DAY); const avg=days.length?(days.reduce((a,b)=>a+b,0)/days.length):null;
   const withAction=closed.filter(c=>c.action&&c.effective).length;
   const sv=surveys.filter(s=>inPeriod(s.at)); const ov=sv.map(s=>s.scores&&s.scores.overall).filter(n=>n);
-  const tiles=[["Cases received",totalAll],["Open now",openAll],["Overdue",overdue,overdue>0],["Average days to close",avg==null?"—":avg.toFixed(1)],["Closed with verified action",closed.length?Math.round(withAction/closed.length*100)+"%":"—"],["Average trip score",ov.length?(ov.reduce((a,b)=>a+b,0)/ov.length).toFixed(1)+" / 10":"—"]];
+  const waitingAppr=cases.filter(c=>c.status==="Awaiting approval");
+  const longest=waitingAppr.length?Math.max(...waitingAppr.map(c=>(Date.now()-(c.approvalRequestedAt||c.updatedAt||c.receivedAt))/DAY)):null;
+  const tiles=[["Cases received",totalAll],["Open now",openAll],["Overdue",overdue,overdue>0],["Awaiting approval",waitingAppr.length],["Longest wait for approval",longest==null?"—":(longest<1?"under 1 day":Math.floor(longest)+" day"+(Math.floor(longest)===1?"":"s")),longest!=null&&longest>=3],["Average days to close",avg==null?"—":avg.toFixed(1)],["Closed with verified action",closed.length?Math.round(withAction/closed.length*100)+"%":"—"],["Average trip score",ov.length?(ov.reduce((a,b)=>a+b,0)/ov.length).toFixed(1)+" / 10":"—"]];
   $("#tiles").replaceChildren(...tiles.map(([l,n,w])=>el("div",{class:"tile"+(w?" warn":"")},el("div",{class:"n",text:n}),el("div",{class:"l",text:l}))));
   const byCat=counts?CATS.map(c=>{const r=counts.find(x=>x.category===c.id);return [c.name,r?Number(r.total):0]}):CATS.map(c=>[c.name,cs.filter(x=>x.category===c.id).length]);
   bars("#byCat",byCat);
@@ -1358,11 +1384,12 @@ function renderDash(){
   }
 }
 function exportCsv(){
-  const cols=["ref","category","severity","status","reporterType","channel","anonymous","title","place","tour","occurredAt","receivedAt","acknowledgedAt","closedAt","owner","rootCause","findings","action","actionDue","actionDone","effective","responseSent"];
+  const cols=["ref","category","severity","status","reporterType","channel","anonymous","title","place","tour","occurredAt","receivedAt","acknowledgedAt","closedAt","owner","rootCause","findings","action","actionDue","actionDone","effective","responseSent","approvalRequestedByName","approvalRequestedAt","approvedByName","approvedAt"];
   const iso=v=>typeof v==="number"&&v>1e11?new Date(v).toISOString():v;
   const esc=v=>{v=v==null?"":String(iso(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
   const rows=cases.filter(c=>inPeriod(c.receivedAt)).map(c=>cols.map(k=>esc(k==="category"?(CAT[c[k]]||{name:c[k]}).name:c[k])).join(","));
-  const blob=new Blob(["﻿"+[cols.join(",")].concat(rows).join("\n")],{type:"text/csv;charset=utf-8"});
+  const head=cols.map(k=>({approvalRequestedByName:"submittedForApprovalBy",approvalRequestedAt:"submittedForApprovalAt",approvedByName:"approvedBy"}[k]||k));
+  const blob=new Blob(["﻿"+[head.join(",")].concat(rows).join("\n")],{type:"text/csv;charset=utf-8"});
   const a=el("a",{href:URL.createObjectURL(blob),download:"incident-register-"+new Date().toISOString().slice(0,10)+".csv"});
   document.body.append(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
 }
@@ -1431,6 +1458,7 @@ async function verifyCode(e){
 async function handleSession(session){
   if(!session){staff=null;cases=[];surveys=[];counts=null;applyStaffUI();return}
   const {data,error}=await sb.from("staff").select("full_name,roles,active").eq("user_id",session.user.id).maybeSingle();
+  if(data)data.user_id=session.user.id;
   if(error||!data||!data.active){
     staff=null; applyStaffUI(); show("signin");
     $("#siMsg").textContent="You're signed in as "+session.user.email+", but that email isn't on the active team list. Ask an admin.";
@@ -1445,6 +1473,8 @@ function applyStaffUI(){
   const on=isStaffUI();
   document.querySelectorAll("[data-staff]").forEach(n=>n.hidden=!on);
   document.querySelectorAll("[data-admin]").forEach(n=>n.hidden=!isAdmin());
+  document.querySelectorAll("[data-team]").forEach(n=>n.hidden=!(isAdmin()||isApprover()));
+  $("#teamForm").hidden=!isAdmin();
   updateWhoNote();
   $("#tab-signin").hidden=on; $("#bn-signin").hidden=on;
   $("#signout").hidden=demo||!staff;
@@ -1455,7 +1485,7 @@ function applyStaffUI(){
   else if(staff){m.hidden=false;m.textContent="";m.append(el("strong",{text:"Signed in as "+staff.full_name+"."})," Roles: "+(staff.roles&&staff.roles.length?staff.roles.join(", "):"staff")+".",el("button",{type:"button",class:"linkbtn",onclick:signOut},"Sign out"));}
   else m.hidden=true;
   if(!on&&STAFF_VIEWS.includes(location.hash.slice(1)))show("signin");
-  else if(on&&!isAdmin()&&location.hash.slice(1)==="team")show("register");
+  else if(on&&!isAdmin()&&!isApprover()&&location.hash.slice(1)==="team")show("register");
 }
 
 // ---------- views ----------
@@ -1494,6 +1524,8 @@ async function renderTeam(){
     team=data||[];
   }
   box.replaceChildren();
+  const nAppr=team.filter(t=>t.active&&(t.roles||[]).includes("approver")).length, an=$("#apprNote");
+  an.hidden=nAppr===2; an.textContent=nAppr===2?"":(nAppr===0?"No approvers are assigned. ":"Only one approver is assigned. ")+"Keep two approvers, so that one can approve while the other is away and nobody approves their own work."+(isAdmin()?"":" Use Make approver below.");
   if(!team.length){box.append(el("div",{class:"empty",text:"Nobody on the team yet."}));return}
   team.forEach(t=>{
     const tags=el("div",{class:"tags"});
@@ -1504,10 +1536,16 @@ async function renderTeam(){
     box.append(el("div",{class:"member"+(t.active?"":" off")},
       el("div",{class:"who2"},el("b",{text:t.full_name||t.email}),el("span",{text:t.email+(seen?" · "+seen:"")})),
       tags,
-      el("div",{class:"acts"},
+      isAdmin()?el("div",{class:"acts"},
         el("button",{type:"button",class:"btn ghost small",onclick:()=>editMember(t)},"Edit"),
-        el("button",{type:"button",class:"btn ghost small",onclick:()=>saveMember(t.email,t.full_name,t.roles||[],!t.active,t.active?"Switched off":"Switched back on")},t.active?"Switch off":"Switch on"))));
+        el("button",{type:"button",class:"btn ghost small",onclick:()=>saveMember(t.email,t.full_name,t.roles||[],!t.active,t.active?"Switched off":"Switched back on")},t.active?"Switch off":"Switch on"))
+      :el("div",{class:"acts"},t.active?el("button",{type:"button",class:"btn ghost small",onclick:()=>setApprover(t,!(t.roles||[]).includes("approver"))},(t.roles||[]).includes("approver")?"Remove approver":"Make approver"):null)));
   });
+}
+async function setApprover(t,on){
+  if(demo){t.roles=(t.roles||[]).filter(r=>r!=="approver").concat(on?["approver"]:[]);}
+  else{const {error}=await sb.rpc("set_approver",{p_email:t.email,p_on:on}); if(error){toast(errText(error));return}}
+  toast(on?(t.full_name||t.email)+" is now an approver":(t.full_name||t.email)+" is no longer an approver"); renderTeam(); loadData();
 }
 function editMember(t){
   editing=t; $("#tmTitle").textContent="Edit "+(t.full_name||t.email);
