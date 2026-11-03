@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="https://experiencescaribbean.com/wp-content/uploads/2025/08/86d9f8a6-a0be-42c7-b586-296c2a6424b8-all-color-logos-12-600x600.png">
 <link rel="icon" href="https://experiencescaribbean.com/wp-content/uploads/2025/08/86d9f8a6-a0be-42c7-b586-296c2a6424b8-all-color-logos-12-600x600.png">
 <title>Feedback &amp; Incident Reports · Experiences Caribbean</title>
-<meta name="description" content="Tell Experiences Caribbean about a complaint, compliment, accident, near miss or concern on one of our tours.">
+<meta name="description" content="Tell Experiences Caribbean about a complaint, accident, near miss or concern on one of our tours, or share a compliment in our trip survey.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rosario:wght@400;600;700&family=Roboto:wght@500;700&family=JetBrains+Mono:wght@500;600&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -332,7 +332,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
 <section id="view-report" class="stack">
   <div>
     <h1>Tell us what happened</h1>
-    <p class="lede">Use this form for complaints, compliments, accidents, near misses and any concern about safety, people or wildlife on our tours. Every report gets a reference number and a named person who follows it up.</p>
+    <p class="lede">Use this form for complaints, accidents, near misses and any concern about safety, people or wildlife on our tours. Every report gets a reference number and a named person who follows it up. To share a compliment or suggestion, please use our <a href="#survey">trip survey</a>.</p>
   </div>
   <form id="reportForm" class="stack" novalidate>
   <div class="sos" role="note">
@@ -448,7 +448,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
     </fieldset>
     <fieldset><legend>Anything else</legend>
       <div class="grid2">
-        <div class="field full"><label for="s-comment">Comments</label><textarea id="s-comment" maxlength="8000"></textarea></div>
+        <div class="field full"><label for="s-comment">Compliments, suggestions or other comments</label><textarea id="s-comment" maxlength="8000"></textarea></div>
         <label class="check field full"><input type="checkbox" id="s-follow"> Please contact me about my comments</label>
         <div class="field"><label for="s-email">Email <span class="hint">(only if you want a reply)</span></label><input type="email" id="s-email" autocomplete="email"></div>
       </div>
@@ -573,7 +573,7 @@ const CONFIG = {
 // ---------- reference data ----------
 const CATS = [
   {id:"complaint", name:"Complaint", desc:"Service, booking, guide or information problem", sev:"Medium", ack:2, resolve:14, crit:"10.30", who:"both"},
-  {id:"compliment", name:"Compliment or suggestion", desc:"Praise, an idea, a question about our sustainability", sev:"Low", ack:5, resolve:30, crit:"1.26", who:"both"},
+  {id:"compliment", name:"Compliment or suggestion", desc:"Praise, an idea, a question about our sustainability", sev:"Low", ack:5, resolve:30, crit:"1.26", who:"both", form:false}, // not on the report form (2 Nov 2026): compliments go in the trip survey, which still files them here
   {id:"injury", name:"Accident, injury or illness", desc:"Someone was hurt or fell ill", sev:"High", ack:0, resolve:14, crit:"2.16", who:"both", x:"injury"},
   {id:"nearmiss", name:"Near miss or safety hazard", desc:"Nobody was hurt, but someone could have been", sev:"Medium", ack:2, resolve:30, crit:"2.16", who:"both"},
   {id:"emergency", name:"Emergency (log after calling)", desc:"Missing guest, serious accident, hazard", sev:"Critical", ack:0, resolve:7, crit:"10.19 · 10.20", who:"staff", x:"injury"},
@@ -787,7 +787,7 @@ function exampleSurveys(){const now=Date.now();return [[9,10,8,8,9],[7,9,6,7,7],
 // ---------- report form ----------
 function renderCats(){
   const box=$("#cats"); const prev=(document.querySelector('input[name="cat"]:checked')||{}).value; box.replaceChildren();
-  CATS.filter(c=>c.who==="both"||role==="staff").forEach((c,i)=>{
+  CATS.filter(c=>c.form!==false&&(c.who==="both"||role==="staff")).forEach((c,i)=>{
     const id="cat-"+c.id;
     box.append(el("label",{class:"cat",for:id},el("input",{type:"radio",name:"cat",id,value:c.id,checked:(prev?prev===c.id:i===0)}),el("div",{},el("b",{text:c.name}),el("span",{text:c.desc}))));
   });
