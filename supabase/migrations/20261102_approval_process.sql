@@ -1,0 +1,5 @@
+-- Approval process (applied to project krlsgdqkfxgtivrjndcq on 2 Nov 2026 as migration "approval_process").
+-- One active Approver; only the Approver closes or reopens cases (admins may close only while no approver is assigned).
+-- New status "Awaiting approval"; cases record approved_by / approved_by_name / approved_at; the approver sees all categories.
+-- See the live database for the full function bodies (private.is_approver, private.has_active_approver,
+-- public.current_approver, private.can_see_category, private.cases_before_update, public.admin_save_staff).

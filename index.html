@@ -189,6 +189,15 @@ legend{font:700 13px var(--f-body);text-transform:uppercase;letter-spacing:.06em
 .pill.restricted{background:var(--restricted-soft);color:var(--restricted)}
 .pill.overdue{background:var(--crit);color:var(--surface)}
 .pill.closed{background:var(--low-soft);color:var(--low)}
+.pill.awaiting{background:var(--accent);color:var(--accent-ink)}
+/* Approval (approver only) */
+.approve{border:2px solid var(--accent);border-radius:8px;background:var(--accent-soft);padding:14px;display:flex;flex-direction:column;gap:10px}
+.approve h3{margin:0}
+.approve .bigbtn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 24px;border:0;border-radius:6px;background:var(--green);color:#fff;font:700 17px var(--f-btn);cursor:pointer}
+.approve .bigbtn:hover{filter:brightness(1.08)}
+.approve textarea{min-height:60px}
+.waitnote{border-left:4px solid var(--accent);background:var(--accent-soft);padding:10px 12px;border-radius:0 6px 6px 0;font-size:14px}
+.apprbanner{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;border:2px solid var(--accent);background:var(--accent-soft);border-radius:8px;padding:10px 14px;margin:0 0 12px;font-weight:700}
 .pill.ex{background:none;border:1px dashed var(--muted)}
 .sheet{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:16px;min-width:0}
 .sheet .head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
@@ -491,6 +500,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
     <p class="lede">Every report from every channel. Open a case to assign an owner, record the root cause and corrective action, and close it with a reply to the reporter.</p></div>
     <div class="row regactions"><button class="btn small ghost" type="button" id="refreshBtn">Refresh</button><button class="btn small" type="button" id="logBtn">Log a phone or email report</button></div>
   </div>
+  <div id="apprBanner" class="apprbanner" role="status" hidden></div>
   <div class="filters">
     <input type="text" id="q" placeholder="Search summary, place, reference" aria-label="Search">
     <select id="fCat" aria-label="Category"><option value="">All categories</option></select>
@@ -542,6 +552,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
         <label class="check"><input type="checkbox" id="tm-admin"> <span><b>Admin</b> <span class="hint">— adds people, changes their access, switches them off</span></span></label>
         <label class="check"><input type="checkbox" id="tm-safe"> <span><b>Safeguarding lead</b> <span class="hint">— sees child protection reports</span></span></label>
         <label class="check"><input type="checkbox" id="tm-hr"> <span><b>HR and ethics</b> <span class="hint">— sees staff grievance and whistleblowing reports</span></span></label>
+        <label class="check"><input type="checkbox" id="tm-appr"> <span><b>Approver</b> <span class="hint">— approves and closes cases, sees every case; only one person can hold this</span></span></label>
       </div>
     </fieldset>
     <div class="row"><button class="btn" type="submit" id="tm-save">Add to team</button><button class="btn ghost small" type="button" id="tm-cancel" hidden>Cancel</button><span class="hint" id="tmMsg" role="status"></span></div>
@@ -728,13 +739,13 @@ const WA_MSG = {
   private:     "Hi Experiences Caribbean, I'd like to speak to someone privately about a concern."
 };
 let catChosen = false;
-const STATUSES = ["New","Acknowledged","Investigating","Action in progress","Closed"];
+const STATUSES = ["New","Acknowledged","Investigating","Action in progress","Awaiting approval","Closed"];
 const CAUSES = ["People (training, conduct)","Process or procedure","Supplier","Equipment or vehicle","Weather or environment","Guest behaviour","Information given to guest","Not yet known"];
 const SCALES = [["overall","Overall trip"],["guide","Guide or tour leader"],["transport","Transport and safety"],["accommodation","Accommodation"],["value","Value for money"]];
 const SEV_ORDER = {Critical:0,High:1,Medium:2,Low:3};
 const DAY = 864e5;
 const STAFF_VIEWS = ["register","dashboard","team"];
-const ROLE_LABEL = {admin:"Admin",safeguarding:"Safeguarding lead",hr:"HR and ethics",coordinator:"Coordinator",manager:"Manager"};
+const ROLE_LABEL = {approver:"Approver",admin:"Admin",safeguarding:"Safeguarding lead",hr:"HR and ethics",coordinator:"Coordinator",manager:"Manager"};
 
 // ---------- state ----------
 const demo = !CONFIG.supabaseUrl || !CONFIG.supabaseKey || !window.supabase;
@@ -809,6 +820,10 @@ function isOverdue(c){return c.status!=="Closed" && Date.now()>dueFor(c)}
 function errText(e){const m=(e&&(e.message||e.error_description))||"";return m.replace(/^.*?ERROR:\s*/,"")||"Something went wrong. Try again."}
 function isStaffUI(){return demo || !!staff}
 function isAdmin(){return demo || !!(staff&&(staff.roles||[]).includes("admin"))}
+// Approval: only the approver closes (or reopens) cases. With no approver assigned, admins may close.
+let approverName=null;
+function isApprover(){return demo || !!(staff&&(staff.roles||[]).includes("approver"))}
+function canClose(){return isApprover() || (isAdmin() && !approverName)}
 
 // ---------- case documents (staff only; shown only inside the case register) ----------
 // Stored in the private "case-files" bucket at cases/<case id>/<random>-<name>, listed in table case_files.
@@ -897,6 +912,7 @@ function fromRow(r){
     loggedByName:r.logged_by_name, contact:r.contact||{}, extras:r.extras||{}, owner:r.owner, rootCause:r.root_cause, findings:r.findings, action:r.action,
     actionDue:dayMs(r.action_due), actionDone:dayMs(r.action_done), effective:r.effective, responseSent:r.response_sent,
     checklist:(r.checklist&&typeof r.checklist==="object")?r.checklist:{},
+    approvedByName:r.approved_by_name, approvedAt:ms(r.approved_at),
     log:(r.log||[]).map(l=>({at:ms(l.at), note:l.note, by:l.by}))};
 }
 function surveyFromRow(r){return {id:r.id, at:ms(r.submitted_at), tour:r.tour, scores:r.scores||{}, sustain:r.sustain||{}, comment:r.comment}}
@@ -1121,7 +1137,9 @@ async function submitReport(e){
 
 // ---------- loading (live) ----------
 async function loadData(){
-  if(demo||!staff)return;
+  if(demo){approverName="Demo approver";return}
+  if(!staff)return;
+  sb.rpc("current_approver").then(({data})=>{approverName=data||null}).catch(()=>{});
   const since=+$("#period").value?new Date(Date.now()-$("#period").value*DAY).toISOString():null;
   const [c,s,k]=await Promise.all([
     sb.from("cases").select("*").order("received_at",{ascending:false}).limit(2000),
@@ -1146,12 +1164,19 @@ function filtered(){
 function pills(c){
   const p=[el("span",{class:"pill "+c.severity,text:c.severity})];
   if(c.status==="Closed")p.push(el("span",{class:"pill closed",text:"Closed"}));
+  else if(c.status==="Awaiting approval")p.push(el("span",{class:"pill awaiting",text:"Awaiting approval"}));
   else if(isOverdue(c))p.push(el("span",{class:"pill overdue",text:"Overdue"}));
   else p.push(el("span",{class:"pill",text:c.status}));
   return p;
 }
 function renderList(){
   const list=$("#list"), rows=filtered(); list.replaceChildren();
+  const bn=$("#apprBanner"); if(bn){
+    const waiting=cases.filter(c=>c.status==="Awaiting approval").length;
+    bn.hidden=!(isApprover()&&waiting); bn.replaceChildren();
+    if(!bn.hidden) bn.append(el("span",{text:waiting+" case"+(waiting>1?"s":"")+" awaiting your approval"}),
+      el("button",{type:"button",class:"btn small",onclick:()=>{$("#fStatus").value="Awaiting approval";renderList();$("#list").scrollIntoView({block:"start"})}},"Show them"));
+  }
   if(!cases.length){list.append(el("div",{class:"empty"},"No cases yet. Reports from the website, the survey and logged phone or email reports appear here."));return}
   if(!rows.length){list.append(el("div",{class:"empty",text:"No cases match these filters."}));return}
   rows.forEach(c=>{
@@ -1171,6 +1196,25 @@ function renderSheet(){
   const si=STATUSES.indexOf(c.status);
   s.append(el("div",{class:"head"},el("div",{},el("div",{class:"ref",text:c.ref}),el("h2",{text:c.title})),el("div",{class:"row"},pills(c),c.restricted?el("span",{class:"pill restricted",text:"Restricted"}):null,c.example?el("span",{class:"pill ex",text:"Example"}):null)));
   s.append(el("div",{class:"steps","aria-label":"Progress"},STATUSES.map((st,i)=>el("span",{class:i===si?"on":i<si?"past":"",text:st}))));
+  if(c.status==="Awaiting approval"){
+    if(isApprover()){
+      const reason=el("textarea",{id:"appr-reason",maxlength:"2000",placeholder:"What still needs doing (needed to send it back)"});
+      const pm=el("p",{class:"hint",id:"apprMsg",role:"status"});
+      const form=()=>$("#sheet form");
+      const doApprove=()=>{const f=form(); if(!f)return; f.querySelector("#h-status").value="Closed"; f.requestSubmit();};
+      const doBack=()=>{const r=reason.value.trim(); if(!r){pm.textContent="Write what still needs doing, so the team knows why it was sent back.";reason.focus();return}
+        const f=form(); if(!f)return; f.querySelector("#h-status").value="Action in progress";
+        const n=f.querySelector("#h-note"); n.value="Sent back by the approver: "+r+(n.value.trim()?"\n"+n.value.trim():""); f.requestSubmit();};
+      s.append(el("div",{class:"approve"},
+        el("h3",{text:"Ready for your approval"}),
+        el("p",{style:"margin:0",text:"Check the root cause, the corrective action and the checklist below. Approving closes the case and records you as the approver."}),
+        el("div",{class:"row"},el("button",{type:"button",class:"bigbtn",id:"approveBtn",onclick:doApprove},"Approve and close")),
+        el("label",{for:"appr-reason",class:"lbl",text:"Not ready? Send it back with a reason"}),reason,
+        el("div",{class:"row"},el("button",{type:"button",class:"btn ghost small",id:"sendBackBtn",onclick:doBack},"Send back")),pm));
+    } else {
+      s.append(el("div",{class:"waitnote",text:"Awaiting approval"+(approverName?" by "+approverName:"")+". Only the approver can close this case; you can still add notes and documents."}));
+    }
+  }
   if(c.restricted)s.append(el("div",{class:"notice",text:"Restricted case: only its designated handler can see it. Do not discuss it outside that role or share it in WhatsApp groups."}));
   else s.append(el("div",{class:"waalert"},el("p",{class:"hint",text:"Share this case with the team group. WhatsApp opens with the summary written; choose the group and press send. Guest contact details are not included."}),
     el("a",{class:"wabtn",href:waGroupLink(caseWaText(c)),target:"_blank",rel:"noopener"},"Alert the team group on WhatsApp")));
@@ -1180,6 +1224,7 @@ function renderSheet(){
   add("Reported by",(c.anonymous?"Anonymous ":"")+(c.reporterType==="staff"?"staff / guide":"guest / visitor")+" · "+(c.channel||""));
   add("Filed by",c.loggedByName);
   add("Happened",fmt(c.occurredAt)); add("Received",fmt(c.receivedAt)); add("Due to close",fmtD(dueFor(c)));
+  if(c.approvedByName)add("Approved by",c.approvedByName+(c.approvedAt?" · "+fmt(c.approvedAt):""));
   add("Where",c.place); add("Tour",c.tour);
   if(c.contact&&(c.contact.name||c.contact.email||c.contact.phone))add("Contact",[c.contact.name,c.contact.email,c.contact.phone,c.contact.lang].filter(Boolean).join(" · "));
   const x=c.extras||{};
@@ -1196,7 +1241,7 @@ function renderSheet(){
   const inp=(id,label,val,type="text")=>el("div",{class:"field"},el("label",{for:id,text:label}),el("input",{type,id,value:val||""}));
   const ta=(id,label,val)=>el("div",{class:"field full"},el("label",{for:id,text:label}),el("textarea",{id},val||""));
   f.append(el("fieldset",{},el("legend",{text:"Handling"}),el("div",{class:"grid2"},
-    sel("h-status","Status",STATUSES,c.status), inp("h-owner","Case owner",c.owner),
+    sel("h-status","Status",STATUSES.filter(st=>st!=="Closed"||canClose()||c.status==="Closed"),c.status), inp("h-owner","Case owner",c.owner),
     sel("h-sev","Severity",["Low","Medium","High","Critical"],c.severity),
     sel("h-cause","Root cause (1.19)",[""].concat(CAUSES),c.rootCause||""),
     ta("h-find","Findings",c.findings))));
@@ -1219,16 +1264,20 @@ function renderSheet(){
     el("label",{class:"check"},el("input",{type:"checkbox",id:"h-resp",checked:!!c.responseSent})," Reply sent to the reporter"),
     ta("h-note","Add a note to the case log",""))));
   setTimeout(()=>["h-find","h-action","h-note"].forEach(attachMic));
+  if(c.status==="Closed"&&!canClose()){const hs=f.querySelector("#h-status"); if(hs){hs.disabled=true; hs.title="Only the approver can reopen a closed case";}}
   const saveBtn=el("button",{class:"btn",type:"submit"},"Save changes");
   const fm=el("span",{class:"hint",role:"status"});
   f.append(el("div",{class:"row"},saveBtn,fm));
   f.addEventListener("submit",async ev=>{
     ev.preventDefault();
     const g=id=>f.querySelector("#"+id);
+    const say=t=>{fm.textContent=t; const pm=$("#apprMsg"); if(pm)pm.textContent=t;};
     const v={status:g("h-status").value,owner:g("h-owner").value.trim(),severity:g("h-sev").value,rootCause:g("h-cause").value,findings:g("h-find").value.trim(),
       action:g("h-action").value.trim(),actionDue:g("h-adue").value||null,actionDone:g("h-adone").value||null,effective:g("h-eff").checked,responseSent:g("h-resp").checked};
-    if(v.status==="Closed"&&(!v.rootCause||!v.action)){fm.textContent="Add a root cause and a corrective action before closing (criterion 1.19).";return}
-    if(v.status==="Closed"&&!c.anonymous&&!v.responseSent&&(c.contact||{}).email){fm.textContent="Tick 'Reply sent' before closing a case with a contactable reporter.";return}
+    if(v.status==="Closed"&&c.status!=="Closed"&&!canClose()){say("Only the approver"+(approverName?", "+approverName+",":"")+" can close a case. Set it to Awaiting approval instead.");return}
+    if(v.status==="Awaiting approval"&&c.status!=="Awaiting approval"&&(!v.rootCause||!v.action)){say("Add a root cause and a corrective action before sending the case for approval.");return}
+    if(v.status==="Closed"&&(!v.rootCause||!v.action)){say("Add a root cause and a corrective action before closing (criterion 1.19).");return}
+    if(v.status==="Closed"&&!c.anonymous&&!v.responseSent&&(c.contact||{}).email){say("Tick 'Reply sent' before closing a case with a contactable reporter.");return}
     const now=Date.now(), by=staff?staff.full_name:"Demo user", log=(c.log||[]).slice();
     // Checklist: keep existing ticks (who and when), stamp new ones, drop unticked ones; log each change.
     const prevCk=c.checklist||{}, nextCk={};
@@ -1240,10 +1289,11 @@ function renderSheet(){
     const openClose=caseActions(c).filter(a=>a.type==="closeout"&&!nextCk[a.key]);
     if(v.status==="Closed"&&c.status!=="Closed"&&openClose.length&&!f.dataset.closeWarned){
       f.dataset.closeWarned="1";
-      fm.textContent=openClose.length+" close-out action"+(openClose.length>1?"s are":" is")+" not ticked. Tick them, or press Save changes again to close anyway.";
+      say(openClose.length+" close-out action"+(openClose.length>1?"s are":" is")+" not ticked. Tick them, or press "+(isApprover()&&c.status==="Awaiting approval"?"Approve and close":"Save changes")+" again to close anyway.");
       return;
     }
     if(c.status!==v.status)log.push({at:now,note:"Status: "+c.status+" → "+v.status,by});
+    if(v.status==="Closed"&&c.status!=="Closed")log.push({at:now,note:isApprover()?"Approved and closed by the approver":"Closed by an admin (no approver assigned)",by});
     if(c.owner!==v.owner&&v.owner)log.push({at:now,note:"Owner: "+v.owner,by});
     const note=g("h-note").value.trim(); if(note)log.push({at:now,note,by});
     const trimmed=log.slice(-300);
@@ -1254,12 +1304,13 @@ function renderSheet(){
         checklist:nextCk,
         log:trimmed.map(l=>({at:new Date(l.at).toISOString(),note:l.note,by:l.by}))}).eq("id",c.id);
       saveBtn.disabled=false;
-      if(error){fm.textContent=errText(error);return}
+      if(error){say(errText(error));return}
       toast("Case "+c.ref+" saved"); await loadData();
     } else {
       Object.assign(c,v,{actionDue:dayMs(v.actionDue),actionDone:dayMs(v.actionDone),log:trimmed,checklist:nextCk});
       if(v.status!=="New"&&!c.acknowledgedAt)c.acknowledgedAt=now;
       c.closedAt=v.status==="Closed"?(c.closedAt||now):null;
+      if(v.status==="Closed"&&!c.approvedByName){c.approvedByName=by;c.approvedAt=now}
       saveBtn.disabled=false; toast("Case "+c.ref+" saved"); renderAll();
     }
   });
@@ -1442,7 +1493,7 @@ async function renderTeam(){
   if(!team.length){box.append(el("div",{class:"empty",text:"Nobody on the team yet."}));return}
   team.forEach(t=>{
     const tags=el("div",{class:"tags"});
-    (t.roles||[]).filter(r=>["admin","safeguarding","hr"].includes(r)).forEach(r=>tags.append(el("span",{class:"pill role",text:ROLE_LABEL[r]})));
+    (t.roles||[]).filter(r=>["admin","safeguarding","hr","approver"].includes(r)).forEach(r=>tags.append(el("span",{class:"pill role",text:ROLE_LABEL[r]})));
     if(!t.active)tags.append(el("span",{class:"pill off",text:"Switched off"}));
     else if(!t.has_login)tags.append(el("span",{class:"pill",text:"Not signed in yet"}));
     const seen=t.last_sign_in?"Last signed in "+fmtD(ms(t.last_sign_in)):"";
@@ -1457,7 +1508,7 @@ async function renderTeam(){
 function editMember(t){
   editing=t; $("#tmTitle").textContent="Edit "+(t.full_name||t.email);
   $("#tm-name").value=t.full_name||""; $("#tm-email").value=t.email; $("#tm-email").disabled=true;
-  $("#tm-admin").checked=(t.roles||[]).includes("admin"); $("#tm-safe").checked=(t.roles||[]).includes("safeguarding"); $("#tm-hr").checked=(t.roles||[]).includes("hr");
+  $("#tm-admin").checked=(t.roles||[]).includes("admin"); $("#tm-safe").checked=(t.roles||[]).includes("safeguarding"); $("#tm-hr").checked=(t.roles||[]).includes("hr"); $("#tm-appr").checked=(t.roles||[]).includes("approver");
   $("#tm-save").textContent="Save changes"; $("#tm-cancel").hidden=false; $("#tmMsg").textContent="";
   $("#teamForm").scrollIntoView({block:"start"}); $("#tm-name").focus();
 }
@@ -1484,8 +1535,8 @@ async function submitTeam(e){
   if(!editing&&(!email||!$("#tm-email").checkValidity())){m.textContent="Enter a valid work email.";$("#tm-email").focus();return}
   if(!editing&&team.some(t=>t.email===email)){m.textContent="That email is already on the team. Use Edit on their row.";return}
   // keep any other roles they already have, then apply the three tick-boxes
-  const keep=(editing&&editing.roles||[]).filter(r=>!["admin","safeguarding","hr"].includes(r));
-  const roles=keep.concat($("#tm-admin").checked?["admin"]:[],$("#tm-safe").checked?["safeguarding"]:[],$("#tm-hr").checked?["hr"]:[]);
+  const keep=(editing&&editing.roles||[]).filter(r=>!["admin","safeguarding","hr","approver"].includes(r));
+  const roles=keep.concat($("#tm-admin").checked?["admin"]:[],$("#tm-safe").checked?["safeguarding"]:[],$("#tm-hr").checked?["hr"]:[],$("#tm-appr").checked?["approver"]:[]);
   $("#tm-save").disabled=true; m.textContent="Saving…";
   const ok=await saveMember(email,name,roles,editing?editing.active:true,editing?"Changes saved":name+" added to the team");
   $("#tm-save").disabled=false;
