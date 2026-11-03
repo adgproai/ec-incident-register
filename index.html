@@ -195,6 +195,7 @@ legend{font:700 13px var(--f-body);text-transform:uppercase;letter-spacing:.06em
 .approve h3{margin:0}
 .approve .bigbtn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 24px;border:0;border-radius:6px;background:var(--green);color:#fff;font:700 17px var(--f-btn);cursor:pointer}
 .approve .bigbtn:hover{filter:brightness(1.08)}
+.btn.submitappr{background:var(--green);border-color:var(--green);color:#fff}
 .approve textarea{min-height:60px}
 .waitnote{border-left:4px solid var(--accent);background:var(--accent-soft);padding:10px 12px;border-radius:0 6px 6px 0;font-size:14px}
 .apprbanner{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;border:2px solid var(--accent);background:var(--accent-soft);border-radius:8px;padding:10px 14px;margin:0 0 12px;font-weight:700}
@@ -1267,12 +1268,15 @@ function renderSheet(){
   if(c.status==="Closed"&&!canClose()){const hs=f.querySelector("#h-status"); if(hs){hs.disabled=true; hs.title="Only the approver can reopen a closed case";}}
   const saveBtn=el("button",{class:"btn",type:"submit"},"Save changes");
   const fm=el("span",{class:"hint",role:"status"});
-  f.append(el("div",{class:"row"},saveBtn,fm));
+  const canSubmitAppr=c.status!=="Awaiting approval"&&c.status!=="Closed";
+  const apprBtn=canSubmitAppr?el("button",{type:"button",class:"btn submitappr",id:"submitApprBtn",title:"Flags the case as waiting to be approved by "+(approverName||"the approver"),onclick:()=>{f.dataset.submitAppr="1";f.requestSubmit();}},"Submit for approval"):null;
+  f.append(el("div",{class:"row"},saveBtn,apprBtn,fm));
   f.addEventListener("submit",async ev=>{
     ev.preventDefault();
+    const submitAppr=f.dataset.submitAppr==="1"; delete f.dataset.submitAppr;
     const g=id=>f.querySelector("#"+id);
     const say=t=>{fm.textContent=t; const pm=$("#apprMsg"); if(pm)pm.textContent=t;};
-    const v={status:g("h-status").value,owner:g("h-owner").value.trim(),severity:g("h-sev").value,rootCause:g("h-cause").value,findings:g("h-find").value.trim(),
+    const v={status:submitAppr?"Awaiting approval":g("h-status").value,owner:g("h-owner").value.trim(),severity:g("h-sev").value,rootCause:g("h-cause").value,findings:g("h-find").value.trim(),
       action:g("h-action").value.trim(),actionDue:g("h-adue").value||null,actionDone:g("h-adone").value||null,effective:g("h-eff").checked,responseSent:g("h-resp").checked};
     if(v.status==="Closed"&&c.status!=="Closed"&&!canClose()){say("Only the approver"+(approverName?", "+approverName+",":"")+" can close a case. Set it to Awaiting approval instead.");return}
     if(v.status==="Awaiting approval"&&c.status!=="Awaiting approval"&&(!v.rootCause||!v.action)){say("Add a root cause and a corrective action before sending the case for approval.");return}
@@ -1305,13 +1309,13 @@ function renderSheet(){
         log:trimmed.map(l=>({at:new Date(l.at).toISOString(),note:l.note,by:l.by}))}).eq("id",c.id);
       saveBtn.disabled=false;
       if(error){say(errText(error));return}
-      toast("Case "+c.ref+" saved"); await loadData();
+      toast("Case "+c.ref+(submitAppr?" submitted for approval":" saved")); await loadData();
     } else {
       Object.assign(c,v,{actionDue:dayMs(v.actionDue),actionDone:dayMs(v.actionDone),log:trimmed,checklist:nextCk});
       if(v.status!=="New"&&!c.acknowledgedAt)c.acknowledgedAt=now;
       c.closedAt=v.status==="Closed"?(c.closedAt||now):null;
       if(v.status==="Closed"&&!c.approvedByName){c.approvedByName=by;c.approvedAt=now}
-      saveBtn.disabled=false; toast("Case "+c.ref+" saved"); renderAll();
+      saveBtn.disabled=false; toast("Case "+c.ref+(submitAppr?" submitted for approval":" saved")); renderAll();
     }
   });
   s.append(f);
