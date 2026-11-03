@@ -119,6 +119,15 @@ legend{font:700 13px var(--f-body);text-transform:uppercase;letter-spacing:.06em
 .whonote{margin:-2px 0 4px;font-size:13.5px;color:var(--muted)}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 /* Case documents (staff only, in the case register) */
+/* Remedial and close-out checklist (case register, corrective action) */
+.actlist{display:flex;flex-direction:column;gap:12px;border:1px solid var(--line);border-radius:6px;padding:12px;background:var(--sunk)}
+.actgroup{display:flex;flex-direction:column;gap:6px}
+.actgroup h4{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.actgroup h4 span{text-transform:none;letter-spacing:0;font-weight:400}
+.actitem{display:flex;gap:8px;align-items:flex-start;font-weight:400;font-size:14px;line-height:1.4}
+.actitem input{margin-top:3px;flex:none;width:18px;height:18px}
+.actitem .who{display:block;font-size:12px;color:var(--muted)}
+.actitem input:checked + span .txt{text-decoration:line-through;text-decoration-color:var(--muted)}
 .docs{display:flex;flex-direction:column;gap:8px}
 .docs h3{margin:0}
 .doclist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
@@ -583,6 +592,127 @@ const CATS = [
   {id:"ethics", name:"Ethics or whistleblowing", desc:"Bribery, fraud, breaking the law or our code", sev:"High", ack:5, resolve:30, crit:"1.29", who:"both", restricted:true}
 ];
 const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
+// Remedial and close-out actions by category, from Remedial_actions.xlsx (Actions list sheet), agreed 2 Nov 2026.
+// Keys in a case's checklist: R1..R5 = remedial, C1..C3 = close-out. Keep the order stable: ticks are stored by position.
+const ACTIONS = {
+ "complaint": {
+  "remedial": [
+   "Contact the guest, acknowledge the complaint and apologise where appropriate",
+   "Get the facts: speak to the guide, driver or booking staff involved and check the booking record",
+   "Offer a fair remedy where justified (refund, partial refund, rebooking or goodwill gesture) and agree it with the guest",
+   "Fix the cause: correct the information, process or supplier arrangement that went wrong",
+   "Brief or retrain the staff member or supplier involved and note what was changed"
+  ],
+  "closeout": [
+   "Final reply sent to the guest with the outcome and any remedy",
+   "Remedy delivered (refund paid, rebooking confirmed) where one was agreed",
+   "Checked the fix worked, e.g. no repeat complaint on that tour or issue"
+  ]
+ },
+ "injury": {
+  "remedial": [
+   "Confirm the person received first aid or medical care and is safe; record the treatment given",
+   "Make the activity, site or vehicle safe; suspend it until checked if needed",
+   "Collect the facts while fresh: statements from guide, guest and witnesses, photos, times",
+   "Notify those who need to know: emergency contact (with consent), insurer, and authorities where required",
+   "Find the cause and agree controls; update the risk assessment and operating procedure"
+  ],
+  "closeout": [
+   "Followed up on the person's recovery and any claim",
+   "Risk assessment or procedure updated and staff briefed on the change",
+   "Medical notes, statements and insurer documents attached to the case"
+  ]
+ },
+ "nearmiss": {
+  "remedial": [
+   "Remove or isolate the hazard straight away (close the path, take the vehicle off the road, stop the activity)",
+   "Record what happened and what could have happened, with location and photos",
+   "Warn guides and drivers who use the same site, vehicle or route",
+   "Fix the cause: repair, maintenance, new procedure, or report it to the site owner or authority",
+   "Update the risk assessment for that tour, site or vehicle"
+  ],
+  "closeout": [
+   "Hazard confirmed fixed on re-inspection (date and by whom)",
+   "Staff briefed on the change",
+   "Raised at the monthly review to check for repeats"
+  ]
+ },
+ "supplier": {
+  "remedial": [
+   "Raise the concern with the supplier in writing and ask for a response by a set date",
+   "Check it against our supplier policy, contract clauses and codes of conduct (incl. animal welfare guidelines)",
+   "Ask for evidence or inspect: site visit, photos, licences, welfare, waste or pay records",
+   "Agree an improvement plan with deadlines, or pause sales of that product while it is resolved",
+   "Report to the relevant authority where the law may be broken (wildlife, pollution, labour)"
+  ],
+  "closeout": [
+   "Decision recorded: continue, continue with conditions, or stop using the supplier",
+   "Supplier file and contract updated",
+   "Guides and guests informed of any change to the tour"
+  ]
+ },
+ "safeguarding": {
+  "remedial": [
+   "If a child may be in danger, call 911 at once. Do not confront anyone or investigate yourself",
+   "Record exactly what was seen or heard, when, where and who: facts, not opinions. Keep it confidential",
+   "Refer to the Social Welfare Division Child Protection Unit (767) 266-3080 and/or the police (767) 266-5100; note the date and any reference",
+   "If a staff member or supplier is involved, remove them from work with guests or children pending investigation; apply the contract clause",
+   "Support the person who reported and protect their identity"
+  ],
+  "closeout": [
+   "Outcome of the referral recorded, as far as the authorities share it",
+   "Decision on the staff member or supplier recorded",
+   "Staff training or policy refreshed where the case showed a gap"
+  ]
+ },
+ "grievance": {
+  "remedial": [
+   "Acknowledge in writing and offer informal resolution or mediation where suitable",
+   "Investigate: gather the facts and documents, speak to those involved",
+   "Hold a grievance meeting; the employee may bring a colleague or representative",
+   "Decide and give the outcome in writing, with the right to appeal",
+   "Put agreed changes in place (pay correction, rota, policy)"
+  ],
+  "closeout": [
+   "Appeal period ended, or appeal heard and recorded",
+   "Agreed changes confirmed done",
+   "Checked in with the employee after about a month: no victimisation"
+  ]
+ },
+ "ethics": {
+  "remedial": [
+   "Acknowledge receipt, protect the reporter's identity and assess any risk of retaliation",
+   "Assess what law or code may be broken, how serious it is, and whether it must be referred outside (police, regulator)",
+   "Investigate impartially, by someone not involved",
+   "Act: stop the practice, apply discipline, recover losses, report to authorities where required",
+   "Give the reporter feedback at each stage, as far as possible"
+  ],
+  "closeout": [
+   "Findings documented and records kept",
+   "Controls improved (approvals, anti-bribery guideline, training)",
+   "Reporter's protection monitored: no retaliation"
+  ]
+ },
+ "emergency": {
+  "remedial": [
+   "Confirm emergency services were called and every guest is accounted for",
+   "Duty manager took charge and the emergency plan was followed",
+   "Notify emergency contacts, insurer and authorities as required; one named spokesperson for any media",
+   "Arrange care and onward plans for affected guests (medical, accommodation, transport, embassy)",
+   "Debrief the staff and guests involved and offer support"
+  ],
+  "closeout": [
+   "Full record attached: timeline, statements, receipts",
+   "Emergency plan and risk assessment reviewed and updated",
+   "Lessons shared with all staff; next drill scheduled"
+  ]
+ }
+};
+// The checklist items for a case: [{key:"R1", type:"remedial", text}, ..., {key:"C1", type:"closeout", text}]
+function caseActions(c){
+  const a=ACTIONS[c.category]; if(!a)return [];
+  return a.remedial.map((t,i)=>({key:"R"+(i+1),type:"remedial",text:t})).concat(a.closeout.map((t,i)=>({key:"C"+(i+1),type:"closeout",text:t})));
+}
 // WhatsApp "help" button: the chat opens with a starter message that matches what the person ticked.
 // Until they actively pick a category the message stays general (Complaint is only ticked by default).
 // Confidential categories never name the topic in WhatsApp.
@@ -766,6 +896,7 @@ function fromRow(r){
     occurredAt:ms(r.occurred_at), receivedAt:ms(r.received_at), acknowledgedAt:ms(r.acknowledged_at), closedAt:ms(r.closed_at),
     loggedByName:r.logged_by_name, contact:r.contact||{}, extras:r.extras||{}, owner:r.owner, rootCause:r.root_cause, findings:r.findings, action:r.action,
     actionDue:dayMs(r.action_due), actionDone:dayMs(r.action_done), effective:r.effective, responseSent:r.response_sent,
+    checklist:(r.checklist&&typeof r.checklist==="object")?r.checklist:{},
     log:(r.log||[]).map(l=>({at:ms(l.at), note:l.note, by:l.by}))};
 }
 function surveyFromRow(r){return {id:r.id, at:ms(r.submitted_at), tour:r.tour, scores:r.scores||{}, sustain:r.sustain||{}, comment:r.comment}}
@@ -1069,7 +1200,19 @@ function renderSheet(){
     sel("h-sev","Severity",["Low","Medium","High","Critical"],c.severity),
     sel("h-cause","Root cause (1.19)",[""].concat(CAUSES),c.rootCause||""),
     ta("h-find","Findings",c.findings))));
+  const acts=caseActions(c), done=c.checklist||{};
+  const actGroup=(type,title)=>{
+    const items=acts.filter(a=>a.type===type); if(!items.length)return null;
+    const n=items.filter(a=>done[a.key]).length;
+    return el("div",{class:"actgroup"},el("h4",{},title+" ",el("span",{text:"("+n+" of "+items.length+" done)"})),
+      items.map(a=>el("label",{class:"actitem",for:"ck-"+a.key},
+        el("input",{type:"checkbox",id:"ck-"+a.key,"data-key":a.key,checked:!!done[a.key]}),
+        el("span",{},el("span",{class:"txt",text:a.text}),done[a.key]?el("span",{class:"who",text:"Done · "+(done[a.key].by||"")+(done[a.key].at?" · "+fmt(Date.parse(done[a.key].at)||done[a.key].at):"")}):null))));
+  };
+  const actBox=acts.length?el("div",{class:"field full"},el("span",{class:"lbl",text:"Remedial and close-out actions for "+cat.name}),
+    el("div",{class:"actlist"},actGroup("remedial","Remedial actions"),actGroup("closeout","Close-out actions"))):null;
   f.append(el("fieldset",{},el("legend",{text:"Corrective action"}),el("div",{class:"grid2"},
+    actBox,
     ta("h-action","Action to prevent it happening again",c.action),
     inp("h-adue","Action due",isoDay(c.actionDue),"date"), inp("h-adone","Action completed",isoDay(c.actionDone),"date"),
     el("label",{class:"check"},el("input",{type:"checkbox",id:"h-eff",checked:!!c.effective})," Checked the action worked"),
@@ -1087,6 +1230,19 @@ function renderSheet(){
     if(v.status==="Closed"&&(!v.rootCause||!v.action)){fm.textContent="Add a root cause and a corrective action before closing (criterion 1.19).";return}
     if(v.status==="Closed"&&!c.anonymous&&!v.responseSent&&(c.contact||{}).email){fm.textContent="Tick 'Reply sent' before closing a case with a contactable reporter.";return}
     const now=Date.now(), by=staff?staff.full_name:"Demo user", log=(c.log||[]).slice();
+    // Checklist: keep existing ticks (who and when), stamp new ones, drop unticked ones; log each change.
+    const prevCk=c.checklist||{}, nextCk={};
+    caseActions(c).forEach(a=>{
+      const box=f.querySelector("#ck-"+a.key); if(!box)return;
+      if(box.checked){ nextCk[a.key]=prevCk[a.key]||{at:new Date(now).toISOString(),by,text:a.text}; if(!prevCk[a.key])log.push({at:now,note:"Ticked: "+a.text,by}); }
+      else if(prevCk[a.key]) log.push({at:now,note:"Unticked: "+a.text,by});
+    });
+    const openClose=caseActions(c).filter(a=>a.type==="closeout"&&!nextCk[a.key]);
+    if(v.status==="Closed"&&c.status!=="Closed"&&openClose.length&&!f.dataset.closeWarned){
+      f.dataset.closeWarned="1";
+      fm.textContent=openClose.length+" close-out action"+(openClose.length>1?"s are":" is")+" not ticked. Tick them, or press Save changes again to close anyway.";
+      return;
+    }
     if(c.status!==v.status)log.push({at:now,note:"Status: "+c.status+" → "+v.status,by});
     if(c.owner!==v.owner&&v.owner)log.push({at:now,note:"Owner: "+v.owner,by});
     const note=g("h-note").value.trim(); if(note)log.push({at:now,note,by});
@@ -1095,12 +1251,13 @@ function renderSheet(){
     if(!demo){
       const {error}=await sb.from("cases").update({status:v.status,owner:v.owner||null,severity:v.severity,root_cause:v.rootCause||null,findings:v.findings||null,
         action:v.action||null,action_due:v.actionDue,action_done:v.actionDone,effective:v.effective,response_sent:v.responseSent,
+        checklist:nextCk,
         log:trimmed.map(l=>({at:new Date(l.at).toISOString(),note:l.note,by:l.by}))}).eq("id",c.id);
       saveBtn.disabled=false;
       if(error){fm.textContent=errText(error);return}
       toast("Case "+c.ref+" saved"); await loadData();
     } else {
-      Object.assign(c,v,{actionDue:dayMs(v.actionDue),actionDone:dayMs(v.actionDone),log:trimmed});
+      Object.assign(c,v,{actionDue:dayMs(v.actionDue),actionDone:dayMs(v.actionDone),log:trimmed,checklist:nextCk});
       if(v.status!=="New"&&!c.acknowledgedAt)c.acknowledgedAt=now;
       c.closedAt=v.status==="Closed"?(c.closedAt||now):null;
       saveBtn.disabled=false; toast("Case "+c.ref+" saved"); renderAll();
