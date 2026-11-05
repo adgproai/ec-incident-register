@@ -40,11 +40,14 @@ const CATEGORY: Record<string, string> = {
   safeguarding: "Child protection or exploitation", grievance: "Staff grievance", ethics: "Ethics or whistleblowing",
 };
 const URGENT_CATEGORIES = ["injury", "emergency", "safeguarding"];
-// Response times shown to the reporter; must match CATS in index.html. ack 0 = same day.
-const TIMES: Record<string, { ack: number; resolve: number }> = {
-  complaint: { ack: 2, resolve: 14 }, compliment: { ack: 5, resolve: 30 }, injury: { ack: 0, resolve: 14 },
-  nearmiss: { ack: 2, resolve: 30 }, emergency: { ack: 0, resolve: 7 }, supplier: { ack: 2, resolve: 30 },
-  safeguarding: { ack: 0, resolve: 7 }, grievance: { ack: 5, resolve: 30 }, ethics: { ack: 5, resolve: 30 },
+// Response times shown to the reporter; must match CATS in index.html.
+// Source of truth: Remedial_actions.xlsx (Sheet1), adopted 5 Nov 2026.
+const TIMES: Record<string, { ack: string; resolve: string }> = {
+  complaint: { ack: "24 hours", resolve: "7–14 days" }, compliment: { ack: "5 working days", resolve: "30 days" },
+  injury: { ack: "24 hours", resolve: "14–30 days" }, nearmiss: { ack: "24 hours", resolve: "30 days" },
+  emergency: { ack: "24 hours", resolve: "7–14 days" }, supplier: { ack: "24 hours", resolve: "14–30 days" },
+  safeguarding: { ack: "24 hours", resolve: "7–14 days" }, grievance: { ack: "48 hours", resolve: "30 days" },
+  ethics: { ack: "48 hours", resolve: "30 days" },
 };
 const SITE_URL = "https://reports.experiencescaribbean.com/";
 const HELP_PHONE = "+1 (767) 616-5827";
@@ -143,8 +146,8 @@ Deno.serve(async (req) => {
 
   // ---------- confirmation to the reporter ----------
   if (canEmailReporter && emailFrom && resendKey) {
-    const t = TIMES[c.category] || { ack: 2, resolve: 30 };
-    const ackText = t.ack === 0 ? "today" : `within ${t.ack} working day${t.ack > 1 ? "s" : ""}`;
+    const t = TIMES[c.category] || { ack: "48 hours", resolve: "30 days" };
+    const ackText = `within ${t.ack}`;
     const hello = reporterName ? `Dear ${esc(reporterName)},` : "Hello,";
     const folder = !c.restricted && (photoRows || []).length ? String(photoRows![0].path).split("/")[1] : "";
     const sent = c.restricted ? "" : `
@@ -161,7 +164,7 @@ Deno.serve(async (req) => {
         <p>${hello}</p>
         <p>Thank you for telling us. We've received your ${c.restricted ? "confidential " : ""}report and a member of our team will follow it up.</p>
         <p style="font-size:18px;margin:16px 0"><strong>Your reference: ${esc(c.ref)}</strong></p>
-        <p>We will acknowledge it <strong>${ackText}</strong> and aim to resolve it <strong>within ${t.resolve} days</strong>.</p>
+        <p>We will acknowledge it <strong>${ackText}</strong> and aim to resolve it <strong>within ${t.resolve}</strong>.</p>
         ${c.restricted ? "<p>This report is confidential. Only the person responsible for this kind of report can see it.</p>" : ""}
         ${sent}
         <p>To add anything, reply to this email and keep the reference in the subject.</p>

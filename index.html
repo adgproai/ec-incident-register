@@ -594,16 +594,17 @@ const CONFIG = {
 };
 
 // ---------- reference data ----------
+// Response times from Remedial_actions.xlsx (Sheet1), the single source of truth (5 Nov 2026). resolve = upper figure in days (due date / Overdue); resolveText is shown to people.
 const CATS = [
-  {id:"complaint", name:"Complaint", desc:"Service, booking, guide or information problem", sev:"Medium", ack:2, resolve:14, crit:"10.30", who:"both"},
-  {id:"compliment", name:"Compliment or suggestion", desc:"Praise, an idea, a question about our sustainability", sev:"Low", ack:5, resolve:30, crit:"1.26", who:"both", form:false}, // not on the report form (2 Nov 2026): compliments go in the trip survey, which still files them here
-  {id:"injury", name:"Accident, injury or illness", desc:"Someone was hurt or fell ill", sev:"High", ack:0, resolve:14, crit:"2.16", who:"both", x:"injury"},
-  {id:"nearmiss", name:"Near miss or safety hazard", desc:"Nobody was hurt, but someone could have been", sev:"Medium", ack:2, resolve:30, crit:"2.16", who:"both"},
-  {id:"emergency", name:"Emergency (log after calling)", desc:"Missing guest, serious accident, hazard", sev:"Critical", ack:0, resolve:7, crit:"10.19 · 10.20", who:"staff", x:"injury"},
-  {id:"supplier", name:"Supplier, wildlife or environment", desc:"Animal welfare, pollution, unfair treatment at a supplier", sev:"Medium", ack:2, resolve:30, crit:"7.9 · 7.10 · 7.12", who:"both", x:"supplier"},
-  {id:"safeguarding", name:"Child protection or exploitation", desc:"Suspected exploitation or harassment of anyone", sev:"Critical", ack:0, resolve:7, crit:"9.11", who:"both", restricted:true},
-  {id:"grievance", name:"Staff grievance or representation", desc:"Pay, hours, treatment at work, a proposal", sev:"Medium", ack:5, resolve:30, crit:"2.19 · 2.20", who:"staff", restricted:true},
-  {id:"ethics", name:"Ethics or whistleblowing", desc:"Bribery, fraud, breaking the law or our code", sev:"High", ack:5, resolve:30, crit:"1.29", who:"both", restricted:true}
+  {id:"complaint", name:"Complaint", desc:"Service, booking, guide or information problem", sev:"Medium", ack:"24 hours", resolve:14, resolveText:"7–14 days", crit:"10.30", who:"both"},
+  {id:"compliment", name:"Compliment or suggestion", desc:"Praise, an idea, a question about our sustainability", sev:"Low", ack:"5 working days", resolve:30, resolveText:"30 days", crit:"1.26", who:"both", form:false}, // not on the report form (2 Nov 2026): compliments go in the trip survey, which still files them here
+  {id:"injury", name:"Accident, injury or illness", desc:"Someone was hurt or fell ill", sev:"High", ack:"24 hours", resolve:30, resolveText:"14–30 days", crit:"2.16", who:"both", x:"injury"},
+  {id:"nearmiss", name:"Near miss or safety hazard", desc:"Nobody was hurt, but someone could have been", sev:"Medium", ack:"24 hours", resolve:30, resolveText:"30 days", crit:"2.16", who:"both"},
+  {id:"emergency", name:"Emergency (log after calling)", desc:"Missing guest, serious accident, hazard", sev:"Critical", ack:"24 hours", resolve:14, resolveText:"7–14 days", crit:"10.19 · 10.20", who:"staff", x:"injury"},
+  {id:"supplier", name:"Supplier, wildlife or environment", desc:"Animal welfare, pollution, unfair treatment at a supplier", sev:"Medium", ack:"24 hours", resolve:30, resolveText:"14–30 days", crit:"7.9 · 7.10 · 7.12", who:"both", x:"supplier"},
+  {id:"safeguarding", name:"Child protection or exploitation", desc:"Suspected exploitation or harassment of anyone", sev:"Critical", ack:"24 hours", resolve:14, resolveText:"7–14 days", crit:"9.11", who:"both", restricted:true},
+  {id:"grievance", name:"Staff grievance or representation", desc:"Pay, hours, treatment at work, a proposal", sev:"Medium", ack:"48 hours", resolve:30, resolveText:"30 days", crit:"2.19 · 2.20", who:"staff", restricted:true},
+  {id:"ethics", name:"Ethics or whistleblowing", desc:"Bribery, fraud, breaking the law or our code", sev:"High", ack:"48 hours", resolve:30, resolveText:"30 days", crit:"1.29", who:"both", restricted:true}
 ];
 const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
 // Remedial and close-out actions by category, from Remedial_actions.xlsx (Actions list sheet), agreed 2 Nov 2026.
@@ -1141,7 +1142,7 @@ async function submitReport(e){
   $("#reportForm").reset(); clearPhotos(true); lastFolder=null; onAnon(); prefill(); renderCats();
   $("#doneRef").textContent=ref;
   const cd=CAT[cat];
-  $("#doneWhen").textContent=cd.ack===0?"Someone will look at it today.":"We'll acknowledge it within "+cd.ack+" working day"+(cd.ack>1?"s":"")+" and aim to resolve it within "+cd.resolve+" days.";
+  $("#doneWhen").textContent="We'll acknowledge it within "+cd.ack+" and aim to resolve it within "+(cd.resolveText||cd.resolve+" days")+".";
   // The alert function emails a confirmation when the reporter gave an email address and consent (not anonymous).
   if(!anon&&email&&contact.consent&&!demo) $("#doneWhen").textContent+=" We've emailed a confirmation with your reference to "+email+".";
   $("#reportForm").hidden=true;$("#doneBox").hidden=false;$("#doneBox").scrollIntoView({block:"center"});
