@@ -1464,7 +1464,7 @@ async function verifyCode(e){
 async function handleSession(session){
   if(!session){staff=null;loadedFor=null;cases=[];surveys=[];counts=null;applyStaffUI();return}
   if(staff&&loadedFor===session.user.id)return; // hourly token refresh: same person, keep the page (and any unsaved edits) as is
-  const {data,error}=await sb.from("staff").select("full_name,roles,active").eq("user_id",session.user.id).maybeSingle();
+  const {data,error}=await sb.from("staff").select("full_name,email,roles,active").eq("user_id",session.user.id).maybeSingle();
   if(data)data.user_id=session.user.id;
   if(error||!data||!data.active){
     staff=null; applyStaffUI(); show("signin");
@@ -1551,7 +1551,8 @@ async function renderTeam(){
       tags,
       isAdmin()?el("div",{class:"acts"},
         el("button",{type:"button",class:"btn ghost small",onclick:()=>editMember(t)},"Edit"),
-        el("button",{type:"button",class:"btn ghost small",onclick:()=>saveMember(t.email,t.full_name,t.roles||[],!t.active,t.active?"Switched off":"Switched back on")},t.active?"Switch off":"Switch on"))
+        el("button",{type:"button",class:"btn ghost small",onclick:()=>saveMember(t.email,t.full_name,t.roles||[],!t.active,t.active?"Switched off":"Switched back on")},t.active?"Switch off":"Switch on"),
+        t.email!==(staff&&staff.email)?delBtn(t):null)
       :el("div",{class:"acts"},t.active?el("button",{type:"button",class:"btn ghost small",onclick:()=>setApprover(t,!(t.roles||[]).includes("approver"))},(t.roles||[]).includes("approver")?"Remove approver":"Make approver"):null)));
   });
 }
@@ -1570,6 +1571,18 @@ function editMember(t){
 function resetTeamForm(){
   editing=null; $("#teamForm").reset(); $("#tm-email").disabled=false; $("#tmTitle").textContent="Add a team member";
   $("#tm-save").textContent="Add to team"; $("#tm-cancel").hidden=true;
+}
+// Delete from the team: two taps. Their cases, notes and itineraries stay, with their name.
+function delBtn(t){
+  const b=el("button",{type:"button",class:"btn danger small"},"Delete"); let armed=0;
+  b.addEventListener("click",async()=>{
+    if(Date.now()-armed>4000){armed=Date.now();b.textContent="Tap again to delete "+(t.full_name||t.email);setTimeout(()=>{if(b.isConnected)b.textContent="Delete"},4000);return}
+    b.disabled=true;
+    if(demo){team=team.filter(x=>x.email!==t.email)}
+    else{const {error}=await sb.rpc("admin_delete_staff",{p_email:t.email}); if(error){b.disabled=false;b.textContent="Delete";toast(errText(error));return}}
+    toast((t.full_name||t.email)+" deleted from the team"); renderTeam();
+  });
+  return b;
 }
 async function saveMember(email,name,roles,active,done){
   const m=$("#tmMsg");
