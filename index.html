@@ -757,7 +757,8 @@ const ROLE_LABEL = {itineraries:"Itineraries",approver:"Approver",admin:"Admin",
 // ---------- state ----------
 const demo = !CONFIG.supabaseUrl || !CONFIG.supabaseKey || !window.supabase;
 let sb = null, staff = null, cases = [], surveys = [], counts = null, selected = null, role = "guest", refreshTimer = null;
-let sheetDirty = false, loadedFor = null; // sheetDirty: the open case has unsaved edits, so background refreshes must not redraw it
+const openItinRequested = location.hash === "#open-itineraries"; // from the website menu
+let sheetDirty = false, loadedFor = null, handoffDone = false; // sheetDirty: the open case has unsaved edits, so background refreshes must not redraw it
 const qs = new URLSearchParams(location.search);
 const hadAuthHash = /access_token=|error_description=/.test(location.hash);
 
@@ -1464,7 +1465,9 @@ async function verifyCode(e){
   m.textContent=error?"That code didn't work. It may have expired; send a new one.":"";
 }
 async function handleSession(session){
-  if(!session){staff=null;loadedFor=null;cases=[];surveys=[];counts=null;applyStaffUI();return}
+  if(!session){staff=null;loadedFor=null;cases=[];surveys=[];counts=null;applyStaffUI();
+    if(openItinRequested&&!demo)location.replace(TRIPS_URL); // not signed in here: sign in at the builder
+    return}
   if(staff&&loadedFor===session.user.id)return; // hourly token refresh: same person, keep the page (and any unsaved edits) as is
   const {data,error}=await sb.from("staff").select("full_name,email,roles,active").eq("user_id",session.user.id).maybeSingle();
   if(data)data.user_id=session.user.id;
@@ -1474,6 +1477,8 @@ async function handleSession(session){
     $("#signout").hidden=false; return;
   }
   if(!demo)setItinFlag((data.roles||[]).includes("itineraries"));
+  // Arrived from the website's "Guest itineraries" menu item: hand over to the builder, signed in.
+  if(openItinRequested&&!handoffDone){handoffDone=true;openItineraries(true);return}
   if((data.roles||[]).length&&(data.roles||[]).every(r=>r==="itineraries")){ // Itineraries-only accounts have no register access
     staff=null; applyStaffUI(); show("signin");
     const m=$("#siMsg"); m.replaceChildren("You're signed in as "+session.user.email+". Your account is for guest itineraries only, so it has no access to incident cases. ",el("a",{href:"https://trips.experiencescaribbean.com/"},"Open guest itineraries"),".");
@@ -1581,10 +1586,10 @@ function resetTeamForm(){
 }
 // "Guest itineraries": open the builder in a new tab, already signed in (same accounts).
 const TRIPS_URL="https://trips.experiencescaribbean.com/";
-async function openItineraries(){
-  const w=window.open("about:blank","_blank"); let url=TRIPS_URL;
+async function openItineraries(sameTab){
+  const w=sameTab===true?null:window.open("about:blank","_blank"); let url=TRIPS_URL;
   if(!demo&&sb){try{const {data,error}=await sb.functions.invoke("itinerary-open",{body:{}}); if(!error&&data&&data.token_hash)url=TRIPS_URL+"#sso=reports."+data.token_hash;}catch(_){}}
-  if(w){try{w.opener=null}catch(_){} w.location.replace(url)} else location.href=url;
+  if(w){try{w.opener=null}catch(_){} w.location.replace(url)} else location.replace(url);
 }
 // Delete from the team: two taps. Their cases, notes and itineraries stay, with their name.
 function delBtn(t){
