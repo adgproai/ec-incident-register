@@ -17,7 +17,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rosario:wght@400;600;700&family=Roboto:wght@500;700&family=JetBrains+Mono:wght@500;600&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>/* Arriving from the website's "Guest itineraries" menu item: show only a short "opening" screen
+   while the sign-in is handed to the builder, instead of flashing the register. */
+if(location.hash==="#open-itineraries"){document.documentElement.classList.add("handoff");setTimeout(function(){document.documentElement.classList.remove("handoff")},8000)}</script>
 <style>
+html.handoff body>*{display:none!important}
+html.handoff body{min-height:100vh;display:grid;place-items:center;background:#F4F0DB}
+html.handoff body::before{content:"Opening Guest itineraries\2026";font:600 18px/1.4 Rosario,system-ui,sans-serif;color:#3A3530;padding:20px 28px;border-radius:12px;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.08)}
+
 :root{
   /* Matched to experiencescaribbean.com (Elementor globals + computed styles, 28 Oct 2026):
      header gradient charcoal -> teal (10deg), lime band #E4EAB1 under it, cream sections #F4F0DB,
@@ -1472,6 +1479,7 @@ async function handleSession(session){
   const {data,error}=await sb.from("staff").select("full_name,email,roles,active").eq("user_id",session.user.id).maybeSingle();
   if(data)data.user_id=session.user.id;
   if(error||!data||!data.active){
+    if(openItinRequested&&!handoffDone){handoffDone=true;location.replace(TRIPS_URL);return}
     staff=null; applyStaffUI(); show("signin");
     $("#siMsg").textContent="You're signed in as "+session.user.email+", but that email isn't on the active team list. Ask an admin.";
     $("#signout").hidden=false; return;
