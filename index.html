@@ -555,6 +555,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
         <label class="check"><input type="checkbox" id="tm-safe"> <span><b>Safeguarding lead</b> <span class="hint">— sees child protection reports</span></span></label>
         <label class="check"><input type="checkbox" id="tm-hr"> <span><b>HR and ethics</b> <span class="hint">— sees staff grievance and whistleblowing reports</span></span></label>
         <label class="check"><input type="checkbox" id="tm-appr"> <span><b>Approver</b> <span class="hint">— approves and closes cases, sees every case; keep exactly two approvers</span></span></label>
+        <label class="check"><input type="checkbox" id="tm-itin"> <span><b>Itineraries</b> <span class="hint">— builds and sends guest itineraries at trips.experiencescaribbean.com</span></span></label>
       </div>
     </fieldset>
     <div class="row"><button class="btn" type="submit" id="tm-save">Add to team</button><button class="btn ghost small" type="button" id="tm-cancel" hidden>Cancel</button><span class="hint" id="tmMsg" role="status"></span></div>
@@ -749,7 +750,7 @@ const SCALES = [["overall","Overall trip"],["guide","Guide or tour leader"],["tr
 const SEV_ORDER = {Critical:0,High:1,Medium:2,Low:3};
 const DAY = 864e5;
 const STAFF_VIEWS = ["register","dashboard","team"];
-const ROLE_LABEL = {approver:"Approver",admin:"Admin",safeguarding:"Safeguarding lead",hr:"HR and ethics",coordinator:"Coordinator",manager:"Manager"};
+const ROLE_LABEL = {itineraries:"Itineraries",approver:"Approver",admin:"Admin",safeguarding:"Safeguarding lead",hr:"HR and ethics",coordinator:"Coordinator",manager:"Manager"};
 
 // ---------- state ----------
 const demo = !CONFIG.supabaseUrl || !CONFIG.supabaseKey || !window.supabase;
@@ -1530,7 +1531,7 @@ async function renderTeam(){
   if(!team.length){box.append(el("div",{class:"empty",text:"Nobody on the team yet."}));return}
   team.forEach(t=>{
     const tags=el("div",{class:"tags"});
-    (t.roles||[]).filter(r=>["admin","safeguarding","hr","approver"].includes(r)).forEach(r=>tags.append(el("span",{class:"pill role",text:ROLE_LABEL[r]})));
+    (t.roles||[]).filter(r=>["admin","safeguarding","hr","approver","itineraries"].includes(r)).forEach(r=>tags.append(el("span",{class:"pill role",text:ROLE_LABEL[r]})));
     if(!t.active)tags.append(el("span",{class:"pill off",text:"Switched off"}));
     else if(!t.has_login)tags.append(el("span",{class:"pill",text:"Not signed in yet"}));
     const seen=t.last_sign_in?"Last signed in "+fmtD(ms(t.last_sign_in)):"";
@@ -1551,7 +1552,7 @@ async function setApprover(t,on){
 function editMember(t){
   editing=t; $("#tmTitle").textContent="Edit "+(t.full_name||t.email);
   $("#tm-name").value=t.full_name||""; $("#tm-email").value=t.email; $("#tm-email").disabled=true;
-  $("#tm-admin").checked=(t.roles||[]).includes("admin"); $("#tm-safe").checked=(t.roles||[]).includes("safeguarding"); $("#tm-hr").checked=(t.roles||[]).includes("hr"); $("#tm-appr").checked=(t.roles||[]).includes("approver");
+  $("#tm-admin").checked=(t.roles||[]).includes("admin"); $("#tm-safe").checked=(t.roles||[]).includes("safeguarding"); $("#tm-hr").checked=(t.roles||[]).includes("hr"); $("#tm-appr").checked=(t.roles||[]).includes("approver"); $("#tm-itin").checked=(t.roles||[]).includes("itineraries");
   $("#tm-save").textContent="Save changes"; $("#tm-cancel").hidden=false; $("#tmMsg").textContent="";
   $("#teamForm").scrollIntoView({block:"start"}); $("#tm-name").focus();
 }
@@ -1577,9 +1578,9 @@ async function submitTeam(e){
   if(!name){m.textContent="Enter the person's full name.";$("#tm-name").focus();return}
   if(!editing&&(!email||!$("#tm-email").checkValidity())){m.textContent="Enter a valid work email.";$("#tm-email").focus();return}
   if(!editing&&team.some(t=>t.email===email)){m.textContent="That email is already on the team. Use Edit on their row.";return}
-  // keep any other roles they already have, then apply the three tick-boxes
-  const keep=(editing&&editing.roles||[]).filter(r=>!["admin","safeguarding","hr","approver"].includes(r));
-  const roles=keep.concat($("#tm-admin").checked?["admin"]:[],$("#tm-safe").checked?["safeguarding"]:[],$("#tm-hr").checked?["hr"]:[],$("#tm-appr").checked?["approver"]:[]);
+  // keep any other roles they already have, then apply the tick-boxes
+  const keep=(editing&&editing.roles||[]).filter(r=>!["admin","safeguarding","hr","approver","itineraries"].includes(r));
+  const roles=keep.concat($("#tm-admin").checked?["admin"]:[],$("#tm-safe").checked?["safeguarding"]:[],$("#tm-hr").checked?["hr"]:[],$("#tm-appr").checked?["approver"]:[],$("#tm-itin").checked?["itineraries"]:[]);
   $("#tm-save").disabled=true; m.textContent="Saving…";
   const ok=await saveMember(email,name,roles,editing?editing.active:true,editing?"Changes saved":name+" added to the team");
   $("#tm-save").disabled=false;
