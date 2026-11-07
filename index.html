@@ -337,6 +337,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
         <button role="tab" id="tab-register" aria-selected="false" data-view="register" data-staff hidden>Case register</button>
         <button role="tab" id="tab-dashboard" aria-selected="false" data-view="dashboard" data-staff hidden>Dashboard</button>
         <button role="tab" id="tab-team" aria-selected="false" data-view="team" data-team hidden>Team</button>
+        <button type="button" id="tab-itin" class="itinlink" data-itin hidden title="Opens the guest itinerary builder in a new tab, already signed in">Guest itineraries &#8599;</button>
         <button role="tab" id="tab-signin" aria-selected="false" data-view="signin">Staff sign in</button>
         <button type="button" id="signout" class="btn ghost small" hidden>Sign out</button>
       </nav>
@@ -577,6 +578,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
   <button type="button" data-view="register" data-staff hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Cases</span></button>
   <button type="button" data-view="dashboard" data-staff hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Dashboard</span></button>
   <button type="button" data-view="team" data-team hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18.5 14.5a6.5 6.5 0 0 1 3 5.5"/></svg><span>Team</span></button>
+  <button type="button" id="bn-itin" class="itinlink" data-itin hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Itineraries</span></button>
   <button type="button" data-view="signin" id="bn-signin"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Staff</span></button>
 </nav>
 <div class="toast" id="toast" hidden role="status"></div>
@@ -1487,6 +1489,7 @@ function applyStaffUI(){
   document.querySelectorAll("[data-staff]").forEach(n=>n.hidden=!on);
   document.querySelectorAll("[data-admin]").forEach(n=>n.hidden=!isAdmin());
   document.querySelectorAll("[data-team]").forEach(n=>n.hidden=!(isAdmin()||isApprover()));
+  document.querySelectorAll("[data-itin]").forEach(n=>n.hidden=!(staff&&(staff.roles||[]).includes("itineraries")));
   $("#teamForm").hidden=!isAdmin();
   updateWhoNote();
   $("#tab-signin").hidden=on; $("#bn-signin").hidden=on;
@@ -1572,6 +1575,13 @@ function resetTeamForm(){
   editing=null; $("#teamForm").reset(); $("#tm-email").disabled=false; $("#tmTitle").textContent="Add a team member";
   $("#tm-save").textContent="Add to team"; $("#tm-cancel").hidden=true;
 }
+// "Guest itineraries": open the builder in a new tab, already signed in (same accounts).
+const TRIPS_URL="https://trips.experiencescaribbean.com/";
+async function openItineraries(){
+  const w=window.open("about:blank","_blank"); let url=TRIPS_URL;
+  if(!demo&&sb){try{const {data,error}=await sb.functions.invoke("itinerary-open",{body:{}}); if(!error&&data&&data.token_hash)url=TRIPS_URL+"#sso=reports."+data.token_hash;}catch(_){}}
+  if(w){try{w.opener=null}catch(_){} w.location.replace(url)} else location.href=url;
+}
 // Delete from the team: two taps. Their cases, notes and itineraries stay, with their name.
 function delBtn(t){
   const b=el("button",{type:"button",class:"btn danger small"},"Delete"); let armed=0;
@@ -1640,6 +1650,7 @@ function boot(){
   $("#another").addEventListener("click",()=>{$("#doneBox").hidden=true;$("#reportForm").hidden=false;$("#f-title").focus()});
   ["#q","#fCat","#fStatus","#fSev"].forEach(s=>$(s).addEventListener("input",renderList));
   $("#period").addEventListener("change",()=>{demo?renderDash():loadData()}); $("#exportBtn").addEventListener("click",exportCsv);
+  document.querySelectorAll("[data-itin]").forEach(b=>b.addEventListener("click",openItineraries));
   $("#refreshBtn").addEventListener("click",()=>{demo?renderAll():loadData().then(()=>toast("Register refreshed"))});
   $("#logBtn").addEventListener("click",()=>{setRole("staff");show("report");$("#f-channel").value="Phone";$("#f-title").focus()});
   $("#signout").addEventListener("click",signOut);
