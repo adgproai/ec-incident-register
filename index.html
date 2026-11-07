@@ -755,6 +755,7 @@ const ROLE_LABEL = {itineraries:"Itineraries",approver:"Approver",admin:"Admin",
 // ---------- state ----------
 const demo = !CONFIG.supabaseUrl || !CONFIG.supabaseKey || !window.supabase;
 let sb = null, staff = null, cases = [], surveys = [], counts = null, selected = null, role = "guest", refreshTimer = null;
+let sheetDirty = false, loadedFor = null; // sheetDirty: the open case has unsaved edits, so background refreshes must not redraw it
 const qs = new URLSearchParams(location.search);
 const hadAuthHash = /access_token=|error_description=/.test(location.hash);
 
@@ -1150,7 +1151,7 @@ async function submitReport(e){
 }
 
 // ---------- loading (live) ----------
-async function loadData(){
+async function loadData(background){
   if(demo){approvers=["Demo approver"];approverName=approvers[0];return}
   if(!staff)return;
   sb.rpc("staff_directory").then(({data})=>{
@@ -1170,6 +1171,8 @@ async function loadData(){
   counts=k.error?null:(k.data||[]);
   if(!deepCaseDone&&qs.get("case")){deepCaseDone=true; const m=cases.find(x=>x.ref===qs.get("case")); if(m){selected=m.id; if(phone())$("#reg").classList.add("detail")}}
   if(!cases.some(x=>x.id===selected))selected=cases.length?cases[0].id:null;
+  // A background refresh never redraws a case someone is editing (it used to wipe unsaved work every minute).
+  if(background&&sheetDirty&&$("#sheet form")){renderList();if(!$("#view-dashboard").hidden)renderDash();return}
   renderAll();
 }
 
@@ -1208,7 +1211,7 @@ function renderList(){
   });
 }
 function renderSheet(){
-  const s=$("#sheet"), c=cases.find(x=>x.id===selected); s.replaceChildren();
+  const s=$("#sheet"), c=cases.find(x=>x.id===selected); s.replaceChildren(); sheetDirty=false;
   if(!c){s.append(el("div",{class:"empty",text:"Choose a case to see its details."}));return}
   s.append(el("button",{type:"button",class:"back",onclick:()=>{$("#reg").classList.remove("detail");window.scrollTo(0,0)}},"← All cases"));
   const cat=CAT[c.category]||{name:c.category,crit:""};
@@ -1344,6 +1347,7 @@ function renderSheet(){
       saveBtn.disabled=false; toast("Case "+c.ref+(submitAppr?" submitted for approval":" saved")); renderAll();
     }
   });
+  ["input","change"].forEach(ev=>f.addEventListener(ev,()=>{sheetDirty=true}));
   s.append(f);
   if(c.log&&c.log.length){s.append(el("h3",{text:"Case log"}),el("ol",{class:"log"},c.log.slice().reverse().map(l=>el("li",{},el("time",{text:fmt(l.at)+(l.by?" · "+l.by:"")}),el("div",{text:l.note})))))}
 }
@@ -1458,7 +1462,8 @@ async function verifyCode(e){
   m.textContent=error?"That code didn't work. It may have expired; send a new one.":"";
 }
 async function handleSession(session){
-  if(!session){staff=null;cases=[];surveys=[];counts=null;applyStaffUI();return}
+  if(!session){staff=null;loadedFor=null;cases=[];surveys=[];counts=null;applyStaffUI();return}
+  if(staff&&loadedFor===session.user.id)return; // hourly token refresh: same person, keep the page (and any unsaved edits) as is
   const {data,error}=await sb.from("staff").select("full_name,roles,active").eq("user_id",session.user.id).maybeSingle();
   if(data)data.user_id=session.user.id;
   if(error||!data||!data.active){
@@ -1466,10 +1471,16 @@ async function handleSession(session){
     $("#siMsg").textContent="You're signed in as "+session.user.email+", but that email isn't on the active team list. Ask an admin.";
     $("#signout").hidden=false; return;
   }
+  if((data.roles||[]).length&&(data.roles||[]).every(r=>r==="itineraries")){ // Itineraries-only accounts have no register access
+    staff=null; applyStaffUI(); show("signin");
+    const m=$("#siMsg"); m.replaceChildren("You're signed in as "+session.user.email+". Your account is for guest itineraries only, so it has no access to incident cases. ",el("a",{href:"https://trips.experiencescaribbean.com/"},"Open guest itineraries"),".");
+    $("#signout").hidden=false; return;
+  }
   staff=data; applyStaffUI();
   if(location.hash.slice(1)==="signin"||hadAuthHash||!location.hash)show("register");
   await loadData();
-  clearInterval(refreshTimer); refreshTimer=setInterval(()=>{if(!document.hidden)loadData()},60000);
+  loadedFor=session.user.id;
+  clearInterval(refreshTimer); refreshTimer=setInterval(()=>{if(!document.hidden)loadData(true)},60000);
 }
 function applyStaffUI(){
   const on=isStaffUI();
