@@ -1473,6 +1473,7 @@ async function handleSession(session){
     $("#siMsg").textContent="You're signed in as "+session.user.email+", but that email isn't on the active team list. Ask an admin.";
     $("#signout").hidden=false; return;
   }
+  if(!demo)setItinFlag((data.roles||[]).includes("itineraries"));
   if((data.roles||[]).length&&(data.roles||[]).every(r=>r==="itineraries")){ // Itineraries-only accounts have no register access
     staff=null; applyStaffUI(); show("signin");
     const m=$("#siMsg"); m.replaceChildren("You're signed in as "+session.user.email+". Your account is for guest itineraries only, so it has no access to incident cases. ",el("a",{href:"https://trips.experiencescaribbean.com/"},"Open guest itineraries"),".");
@@ -1506,7 +1507,10 @@ function applyStaffUI(){
 
 // ---------- views ----------
 const phone=()=>window.matchMedia("(max-width:767px)").matches;
-async function signOut(){ if(sb) await sb.auth.signOut(); clearInterval(refreshTimer); show("report"); toast("Signed out"); }
+// Lets experiencescaribbean.com show its "Guest itineraries" menu item on this browser.
+// Display only: it grants nothing (the builder still checks the sign-in and the role).
+function setItinFlag(on){try{document.cookie="ec_itin="+(on?"1":"")+"; domain=.experiencescaribbean.com; path=/; max-age="+(on?31536000:0)+"; secure; samesite=lax"}catch(_){}}
+async function signOut(){ setItinFlag(false); if(sb) await sb.auth.signOut(); clearInterval(refreshTimer); show("report"); toast("Signed out"); }
 const VIEWS=["report","survey","signin","register","dashboard","team","photos"];
 function show(v){
   let folder=null; if(/^photos=/.test(v||"")){folder=v.slice(7);v="photos"}
