@@ -19,7 +19,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>/* Arriving from the website's "Guest itineraries" menu item: show only a short "opening" screen
    while the sign-in is handed to the builder, instead of flashing the register. */
-if(location.hash==="#open-itineraries"){document.documentElement.classList.add("handoff");setTimeout(function(){document.documentElement.classList.remove("handoff")},8000)}</script>
+if(location.hash==="#open-itineraries"){document.documentElement.classList.add("handoff");setTimeout(function(){document.documentElement.classList.remove("handoff")},8000)}
+addEventListener("pageshow",function(e){if(e.persisted)document.documentElement.classList.remove("handoff")}); // coming Back to this page</script>
 <style>
 html.handoff body>*{display:none!important}
 html.handoff body{min-height:100vh;display:grid;place-items:center;background:#F4F0DB}
@@ -344,7 +345,7 @@ input[type=text],input[type=email],input[type=tel],input[type=date],input[type=d
         <button role="tab" id="tab-register" aria-selected="false" data-view="register" data-staff hidden>Case register</button>
         <button role="tab" id="tab-dashboard" aria-selected="false" data-view="dashboard" data-staff hidden>Dashboard</button>
         <button role="tab" id="tab-team" aria-selected="false" data-view="team" data-team hidden>Team</button>
-        <button type="button" id="tab-itin" class="itinlink" data-itin hidden title="Opens the guest itinerary builder in a new tab, already signed in">Guest itineraries &#8599;</button>
+        <button type="button" id="tab-itin" class="itinlink" data-itin hidden title="Opens the guest itinerary builder, already signed in">Guest itineraries</button>
         <button role="tab" id="tab-signin" aria-selected="false" data-view="signin">Staff sign in</button>
         <button type="button" id="signout" class="btn ghost small" hidden>Sign out</button>
       </nav>
@@ -1592,12 +1593,20 @@ function resetTeamForm(){
   editing=null; $("#teamForm").reset(); $("#tm-email").disabled=false; $("#tmTitle").textContent="Add a team member";
   $("#tm-save").textContent="Add to team"; $("#tm-cancel").hidden=true;
 }
-// "Guest itineraries": open the builder in a new tab, already signed in (same accounts).
+// "Guest itineraries": open the builder in this tab, already signed in (same accounts).
+let leaveArmedAt=0;
+function confirmLeave(){ // unsaved case edits: second click within 4 s leaves anyway
+  if(Date.now()-leaveArmedAt<4000)return true;
+  leaveArmedAt=Date.now(); toast("This case has unsaved changes. Press Save changes, or click Guest itineraries again to leave without saving."); return false;
+}
 const TRIPS_URL="https://trips.experiencescaribbean.com/";
-async function openItineraries(sameTab){
-  const w=sameTab===true?null:window.open("about:blank","_blank"); let url=TRIPS_URL;
+async function openItineraries(fromWebsite){
+  fromWebsite=fromWebsite===true;
+  if(!fromWebsite&&sheetDirty&&$("#sheet form")&&!confirmLeave())return;
+  const w=null; let url=TRIPS_URL; // same tab: it should feel like one site
+  document.documentElement.classList.add("handoff");
   if(!demo&&sb){try{const {data,error}=await sb.functions.invoke("itinerary-open",{body:{}}); if(!error&&data&&data.token_hash)url=TRIPS_URL+"#sso=reports."+data.token_hash;}catch(_){}}
-  if(w){try{w.opener=null}catch(_){} w.location.replace(url)} else location.replace(url);
+  if(fromWebsite)location.replace(url); else location.assign(url); // Back from the builder returns to the website / register
 }
 // Delete from the team: two taps. Their cases, notes and itineraries stay, with their name.
 function delBtn(t){
